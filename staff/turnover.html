@@ -2,14 +2,14 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 プッシュ切り替え</title>
+  <title>方向幕 等速スクロール</title>
   <style>
     .container {
       position: relative;
       width: 600px;
       height: 200px;
       margin: 20px auto;
-      overflow: hidden; /* はみ出しを隠す */
+      overflow: hidden;
       border: 2px solid #333;
     }
     .slide {
@@ -20,21 +20,17 @@
       left: 0;
       transition: transform 1s ease;
     }
-    .hidden {
-      display: none;
-    }
   </style>
 </head>
 <body>
-  <h2>方向幕 プッシュ切り替え</h2>
+  <h2>方向幕 等速スクロール</h2>
   <div class="container">
     <img id="rollsign" class="slide" src="assets/images/to/TO1.png" alt="方向幕">
   </div>
 
   <div>
     <label>停止番号: <input type="number" id="stopIndex" value="5" min="1"></label>
-    <button onclick="startAutoScroll()">▶ 自動スクロール開始</button>
-    <button onclick="stopAutoScroll()">■ 停止</button>
+    <button onclick="startScroll()">▶ 再生開始</button>
   </div>
 
   <script>
@@ -46,54 +42,37 @@
     }
 
     let currentIndex = 0;
-    let scrollTimer = null;
     const container = document.querySelector(".container");
     let currentSlide = document.getElementById("rollsign");
 
     function pushImage(index) {
-      // 新しい画像を作成
       const newSlide = document.createElement("img");
       newSlide.src = images[index];
       newSlide.className = "slide";
-      newSlide.style.transform = "translateY(100%)"; // 下から入ってくる
+      newSlide.style.transform = "translateY(100%)"; // 下から入る
       container.appendChild(newSlide);
 
-      // アニメーション開始
       requestAnimationFrame(() => {
-        // 現在の画像は上へ押し出される
-        currentSlide.style.transform = "translateY(-100%)";
-        // 新しい画像は中央へ
+        currentSlide.style.transform = "translateY(-100%)"; // 上へ押し出す
         newSlide.style.transform = "translateY(0)";
       });
 
-      // アニメーション終了後に古い画像を削除
       setTimeout(() => {
         container.removeChild(currentSlide);
         currentSlide = newSlide;
-      }, 1000); // transition時間と合わせる
+      }, 1000);
     }
 
-    function nextImage() {
+    function scrollTo(stopIndex) {
+      if (currentIndex === stopIndex) return; // 到達したら終了
       currentIndex = (currentIndex + 1) % images.length;
       pushImage(currentIndex);
+      setTimeout(() => scrollTo(stopIndex), 1500); // 等速で次へ
     }
 
-    function startAutoScroll() {
-      stopAutoScroll();
+    function startScroll() {
       const stopIndex = parseInt(document.getElementById("stopIndex").value, 10) - 1;
-      scrollTimer = setInterval(() => {
-        nextImage();
-        if (currentIndex === stopIndex) {
-          stopAutoScroll();
-        }
-      }, 2500);
-    }
-
-    function stopAutoScroll() {
-      if (scrollTimer) {
-        clearInterval(scrollTimer);
-        scrollTimer = null;
-      }
+      scrollTo(stopIndex);
     }
   </script>
 </body>
