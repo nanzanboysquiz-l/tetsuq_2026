@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>方向幕サンプル</title>
+  <style>
+    #rollsign {
+      width: 600px;   /* 表示サイズを調整 */
+      height: auto;
+      border: 2px solid #333;
+    }
+    button {
+      margin: 10px;
+      padding: 8px 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>方向幕サンプル</h2>
+  <img id="rollsign" src="img1.jpg" alt="方向幕">
+
+  <div>
+    <button onclick="prevImage()">◀ 前へ</button>
+    <button onclick="nextImage()">次へ ▶</button>
+  </div>
+
+  <script>
+    // 事前に登録した画像リスト
+    const images = [
+      "img1.jpg",
+      "img2.jpg",
+      "img3.jpg"
+    ];
+
+    let currentIndex = 0;
+    const rollsign = document.getElementById("rollsign");
+
+    function showImage(index) {
+      rollsign.src = images[index];
+    }
+
+    function nextImage() {
+      currentIndex = (currentIndex + 1) % images.length;
+      showImage(currentIndex);
+    }
+
+    function prevImage() {
+      currentIndex = (currentIndex - 1 + images.length) % images.length;
+      showImage(currentIndex);
+    }
+  </script>
+</body>
+</html>
