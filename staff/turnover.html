@@ -2,81 +2,112 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 プッシュ切り替え 等速スクロール</title>
+  <title>方向幕 カンマ区切り停止番号＋順序ラベル</title>
   <style>
     .container {
-      position: relative;
-      width: 600px;
-      height: 200px;
-      margin: 20px auto;
-      overflow: hidden; /* はみ出しを隠す */
+      width: 1134px;
+      height: 529px;
+      overflow: hidden;
       border: 2px solid #333;
+      position: relative;
     }
-    .slide {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      top: 0;
-      left: 0;
-      transition: transform 1s linear; /* 等速で動く */
+    .track {
+      display: flex;
+      flex-direction: column;
+      animation: scrollUp 20s linear infinite;
+    }
+    .track img {
+      width: 1134px;
+      height: 529px;
+    }
+    @keyframes scrollUp {
+      0%   { transform: translateY(0); }
+      100% { transform: translateY(-5290px); } /* 529px × 10枚 */
+    }
+    .buttons {
+      margin-top: 10px;
+    }
+    .buttons button {
+      margin: 5px;
+      padding: 8px 16px;
     }
   </style>
 </head>
 <body>
-  <h2>方向幕 プッシュ切り替え（等速スクロール）</h2>
+  <h2>方向幕 カンマ区切り停止番号＋順序ラベル</h2>
   <div class="container">
-    <img id="rollsign" class="slide" src="assets/images/to/TO1.png" alt="方向幕">
+    <div class="track" id="track">
+      <img src="assets/images/to/TO1.png">
+      <img src="assets/images/to/TO2.png">
+      <img src="assets/images/to/TO3.png">
+      <img src="assets/images/to/TO4.png">
+      <img src="assets/images/to/TO5.png">
+      <img src="assets/images/to/TO6.png">
+      <img src="assets/images/to/TO7.png">
+      <img src="assets/images/to/TO8.png">
+      <img src="assets/images/to/TO9.png">
+      <img src="assets/images/to/TO10.png">
+    </div>
   </div>
 
   <div>
-    <label>停止番号: <input type="number" id="stopIndex" value="5" min="1"></label>
-    <button onclick="startScroll()">▶ 再生開始</button>
+    <label>停止番号リスト: <input type="text" id="stopList" value="1,5,9,2,4"></label>
+    <button onclick="generateButtons()">▶ ボタン生成</button>
   </div>
 
+  <div class="buttons" id="buttons"></div>
+
   <script>
-    const totalImages = 10; // 画像枚数
-    const basePath = "assets/images/to/";
-    const images = [];
-    for (let i = 1; i <= totalImages; i++) {
-      images.push(`${basePath}TO${i}.png`);
+    const track = document.getElementById("track");
+    const imageHeight = 529;
+
+    // 停止処理
+    function stopAt(stopIndex) {
+      const stopPosition = -(imageHeight * (stopIndex - 1));
+      track.style.animationPlayState = "paused";
+
+      const currentTransform = getComputedStyle(track).transform;
+      let currentY = 0;
+      if (currentTransform !== "none") {
+        const matrix = new WebKitCSSMatrix(currentTransform);
+        currentY = matrix.m42;
+      }
+
+      track.style.transition = "transform 1s linear";
+      track.style.transform = `translateY(${stopPosition}px)`;
     }
 
-    let currentIndex = 0;
-    const container = document.querySelector(".container");
-    let currentSlide = document.getElementById("rollsign");
+    // 再開処理
+    function resumeScroll() {
+      track.style.transition = "none";
+      track.style.animationPlayState = "running";
+    }
 
-    // プッシュ切り替え
-    function pushImage(index) {
-      const newSlide = document.createElement("img");
-      newSlide.src = images[index];
-      newSlide.className = "slide";
-      newSlide.style.transform = "translateY(100%)"; // 下から入る
-      container.appendChild(newSlide);
+    // 順序ラベル生成用
+    function ordinal(n) {
+      const suffixes = ["th","st","nd","rd"];
+      const v = n % 100;
+      return n + (suffixes[(v-20)%10] || suffixes[v] || suffixes[0]);
+    }
 
-      // アニメーション開始
-      requestAnimationFrame(() => {
-        currentSlide.style.transform = "translateY(-100%)"; // 上へ押し出す
-        newSlide.style.transform = "translateY(0)";
+    // ボタン生成処理
+    function generateButtons() {
+      const input = document.getElementById("stopList").value;
+      const numbers = input.split(",").map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
+      const buttonsDiv = document.getElementById("buttons");
+      buttonsDiv.innerHTML = "";
+
+      numbers.forEach((num, idx) => {
+        const btn = document.createElement("button");
+        btn.textContent = `${ordinal(idx+1)} → Stop at ${num}`;
+        btn.onclick = () => stopAt(num);
+        buttonsDiv.appendChild(btn);
       });
 
-      // アニメーション終了後に古い画像を削除
-      setTimeout(() => {
-        container.removeChild(currentSlide);
-        currentSlide = newSlide;
-      }, 1000); // transition時間と合わせる
-    }
-
-    // 等速で指定番号まで進む
-    function scrollTo(stopIndex) {
-      if (currentIndex === stopIndex) return; // 到達したら終了
-      currentIndex = (currentIndex + 1) % images.length;
-      pushImage(currentIndex);
-      setTimeout(() => scrollTo(stopIndex), 1500); // 等速で次へ
-    }
-
-    function startScroll() {
-      const stopIndex = parseInt(document.getElementById("stopIndex").value, 10) - 1;
-      scrollTo(stopIndex);
+      const resumeBtn = document.createElement("button");
+      resumeBtn.textContent = "▶ Resume Scroll";
+      resumeBtn.onclick = resumeScroll;
+      buttonsDiv.appendChild(resumeBtn);
     }
   </script>
 </body>
