@@ -60,13 +60,13 @@ button:hover { filter: brightness(1.1); }
   font-size: 16px;
   border: none;
   outline: none;
-  background-color: #42fff; /* ボタン色 */
+  background-color: #42fff;
   color: #000;
   cursor: pointer;
   padding: 12px 16px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-  display: none; /* 初期は非表示 */
+  display: block; /* ← 常に表示 */
 }
 #toTopBtn:hover {
   background-color: #2eaadc; /* ホバー時の色 */
