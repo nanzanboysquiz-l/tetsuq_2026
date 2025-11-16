@@ -47,12 +47,30 @@
     <a href="https://twitter.com/NBQtakeiteasy">NBQ公式Twitter</a> /
     <a href="https://www.instagram.com/nbq_uiz/">NBQのInstagram</a>
   </p>
+  <button id="toTopBtn" title="ページトップへ">▲ Top</button>
 </main>
 <footer class="site-footer">
   <div class="wrap"><p>© 2025 by NBQ.</p></div>
 </footer>
+  <script>
+  // スクロールしたらボタンを表示
+  window.onscroll = function() {
+    const btn = document.getElementById("toTopBtn");
+    if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+      btn.style.display = "block";
+    } else {
+      btn.style.display = "none";
+    }
+  };
+
+  // ボタンをクリックしたらトップへ移動
+  document.getElementById("toTopBtn").onclick = function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+</script>
 </body>
 </html>
+
 
 
 
