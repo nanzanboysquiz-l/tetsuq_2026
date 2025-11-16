@@ -2,14 +2,14 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 等速スクロール</title>
+  <title>方向幕 プッシュ切り替え 等速スクロール</title>
   <style>
     .container {
       position: relative;
       width: 600px;
       height: 200px;
       margin: 20px auto;
-      overflow: hidden;
+      overflow: hidden; /* はみ出しを隠す */
       border: 2px solid #333;
     }
     .slide {
@@ -18,12 +18,12 @@
       height: 100%;
       top: 0;
       left: 0;
-      transition: transform 1s ease;
+      transition: transform 1s linear; /* 等速で動く */
     }
   </style>
 </head>
 <body>
-  <h2>方向幕 等速スクロール</h2>
+  <h2>方向幕 プッシュ切り替え（等速スクロール）</h2>
   <div class="container">
     <img id="rollsign" class="slide" src="assets/images/to/TO1.png" alt="方向幕">
   </div>
@@ -34,7 +34,7 @@
   </div>
 
   <script>
-    const totalImages = 10;
+    const totalImages = 10; // 画像枚数
     const basePath = "assets/images/to/";
     const images = [];
     for (let i = 1; i <= totalImages; i++) {
@@ -45,6 +45,7 @@
     const container = document.querySelector(".container");
     let currentSlide = document.getElementById("rollsign");
 
+    // プッシュ切り替え
     function pushImage(index) {
       const newSlide = document.createElement("img");
       newSlide.src = images[index];
@@ -52,17 +53,20 @@
       newSlide.style.transform = "translateY(100%)"; // 下から入る
       container.appendChild(newSlide);
 
+      // アニメーション開始
       requestAnimationFrame(() => {
         currentSlide.style.transform = "translateY(-100%)"; // 上へ押し出す
         newSlide.style.transform = "translateY(0)";
       });
 
+      // アニメーション終了後に古い画像を削除
       setTimeout(() => {
         container.removeChild(currentSlide);
         currentSlide = newSlide;
-      }, 1000);
+      }, 1000); // transition時間と合わせる
     }
 
+    // 等速で指定番号まで進む
     function scrollTo(stopIndex) {
       if (currentIndex === stopIndex) return; // 到達したら終了
       currentIndex = (currentIndex + 1) % images.length;
