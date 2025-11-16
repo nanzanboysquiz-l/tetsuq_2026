@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 カンマ区切り停止番号＋順序ラベル</title>
+  <title>方向幕 指定番号までスクロール停止</title>
   <style>
     .container {
       width: 1134px;
@@ -14,18 +14,12 @@
     .track {
       display: flex;
       flex-direction: column;
-      animation: scrollUp 20s linear infinite;
+      /* 最初はアニメーションなし */
+      transform: translateY(0);
     }
     .track img {
       width: 1134px;
       height: 529px;
-    }
-    @keyframes scrollUp {
-      0%   { transform: translateY(0); }
-      100% { transform: translateY(-5290px); } /* 529px × 10枚 */
-    }
-    .buttons {
-      margin-top: 10px;
     }
     .buttons button {
       margin: 5px;
@@ -34,7 +28,7 @@
   </style>
 </head>
 <body>
-  <h2>方向幕 カンマ区切り停止番号＋順序ラベル</h2>
+  <h2>方向幕 指定番号までスクロール停止</h2>
   <div class="container">
     <div class="track" id="track">
       <img src="assets/images/to/TO1.png">
@@ -60,37 +54,45 @@
   <script>
     const track = document.getElementById("track");
     const imageHeight = 529;
+    let scrollTimer = null;
 
-    // 停止処理
-    function stopAt(stopIndex) {
+    // 指定番号までスクロール
+    function scrollTo(stopIndex) {
+      if (scrollTimer) clearInterval(scrollTimer);
+
       const stopPosition = -(imageHeight * (stopIndex - 1));
-      track.style.animationPlayState = "paused";
 
-      const currentTransform = getComputedStyle(track).transform;
-      let currentY = 0;
-      if (currentTransform !== "none") {
-        const matrix = new WebKitCSSMatrix(currentTransform);
-        currentY = matrix.m42;
-      }
+      scrollTimer = setInterval(() => {
+        const currentTransform = getComputedStyle(track).transform;
+        let currentY = 0;
+        if (currentTransform !== "none") {
+          const matrix = new WebKitCSSMatrix(currentTransform);
+          currentY = matrix.m42;
+        }
 
-      track.style.transition = "transform 1s linear";
-      track.style.transform = `translateY(${stopPosition}px)`;
+        // 少しずつ上に移動（等速）
+        const step = -10; // スクロール速度（px）
+        let nextY = currentY + step;
+
+        // 停止位置に到達したら止める
+        if (nextY <= stopPosition) {
+          nextY = stopPosition;
+          clearInterval(scrollTimer);
+          scrollTimer = null;
+        }
+
+        track.style.transform = `translateY(${nextY}px)`;
+      }, 16); // 約60fps
     }
 
-    // 再開処理
-    function resumeScroll() {
-      track.style.transition = "none";
-      track.style.animationPlayState = "running";
-    }
-
-    // 順序ラベル生成用
+    // 順序ラベル生成
     function ordinal(n) {
       const suffixes = ["th","st","nd","rd"];
       const v = n % 100;
       return n + (suffixes[(v-20)%10] || suffixes[v] || suffixes[0]);
     }
 
-    // ボタン生成処理
+    // ボタン生成
     function generateButtons() {
       const input = document.getElementById("stopList").value;
       const numbers = input.split(",").map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
@@ -100,14 +102,9 @@
       numbers.forEach((num, idx) => {
         const btn = document.createElement("button");
         btn.textContent = `${ordinal(idx+1)} → Stop at ${num}`;
-        btn.onclick = () => stopAt(num);
+        btn.onclick = () => scrollTo(num);
         buttonsDiv.appendChild(btn);
       });
-
-      const resumeBtn = document.createElement("button");
-      resumeBtn.textContent = "▶ Resume Scroll";
-      resumeBtn.onclick = resumeScroll;
-      buttonsDiv.appendChild(resumeBtn);
     }
   </script>
 </body>
