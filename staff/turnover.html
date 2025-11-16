@@ -2,32 +2,43 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 自動スクロール</title>
+  <title>方向幕 プッシュ切り替え</title>
   <style>
-    #rollsign {
+    .container {
+      position: relative;
       width: 600px;
-      height: auto;
+      height: 200px;
+      margin: 20px auto;
+      overflow: hidden; /* はみ出しを隠す */
       border: 2px solid #333;
     }
-    button, input {
-      margin: 10px;
-      padding: 8px 16px;
+    .slide {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      transition: transform 1s ease;
+    }
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <h2>方向幕 自動スクロール</h2>
-  <img id="rollsign" src="assets/TO1.png" alt="方向幕">
+  <h2>方向幕 プッシュ切り替え</h2>
+  <div class="container">
+    <img id="rollsign" class="slide" src="assets/images/to/TO1.png" alt="方向幕">
+  </div>
 
   <div>
-    <!-- 停止番号を入力できる -->
     <label>停止番号: <input type="number" id="stopIndex" value="5" min="1"></label>
     <button onclick="startAutoScroll()">▶ 自動スクロール開始</button>
     <button onclick="stopAutoScroll()">■ 停止</button>
   </div>
 
   <script>
-    const totalImages = 3; // 画像枚数
+    const totalImages = 10;
     const basePath = "assets/images/to/";
     const images = [];
     for (let i = 1; i <= totalImages; i++) {
@@ -35,28 +46,47 @@
     }
 
     let currentIndex = 0;
-    const rollsign = document.getElementById("rollsign");
     let scrollTimer = null;
+    const container = document.querySelector(".container");
+    let currentSlide = document.getElementById("rollsign");
 
-    function showImage(index) {
-      rollsign.src = images[index];
+    function pushImage(index) {
+      // 新しい画像を作成
+      const newSlide = document.createElement("img");
+      newSlide.src = images[index];
+      newSlide.className = "slide";
+      newSlide.style.transform = "translateY(100%)"; // 下から入ってくる
+      container.appendChild(newSlide);
+
+      // アニメーション開始
+      requestAnimationFrame(() => {
+        // 現在の画像は上へ押し出される
+        currentSlide.style.transform = "translateY(-100%)";
+        // 新しい画像は中央へ
+        newSlide.style.transform = "translateY(0)";
+      });
+
+      // アニメーション終了後に古い画像を削除
+      setTimeout(() => {
+        container.removeChild(currentSlide);
+        currentSlide = newSlide;
+      }, 1000); // transition時間と合わせる
     }
 
     function nextImage() {
-      // n→1につなげる
       currentIndex = (currentIndex + 1) % images.length;
-      showImage(currentIndex);
+      pushImage(currentIndex);
     }
 
     function startAutoScroll() {
-      stopAutoScroll(); // 二重起動防止
-      const stopIndex = parseInt(document.getElementById("stopIndex").value, 10) - 1; // HTML入力値(1始まり→0始まり)
+      stopAutoScroll();
+      const stopIndex = parseInt(document.getElementById("stopIndex").value, 10) - 1;
       scrollTimer = setInterval(() => {
         nextImage();
         if (currentIndex === stopIndex) {
           stopAutoScroll();
         }
-      }, 1000); // 1秒ごとに切り替え
+      }, 2500);
     }
 
     function stopAutoScroll() {
