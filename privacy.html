@@ -83,11 +83,16 @@
 
   <p><strong>改訂日　令和７年１１月１６日</strong></p>
   <p>以上</p>
+ <button id="toTopBtn" title="ページトップへ">▲ Top</button>
 </main>
 
 <footer class="site-footer">
   <div class="wrap"><p>© 2025 by NBQ.</p></div>
 </footer>
+  document.getElementById("toTopBtn").onclick = function() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 </body>
 </html>
+
 
