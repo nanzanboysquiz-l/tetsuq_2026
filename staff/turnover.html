@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 統合版スクロール（周回対応）</title>
+  <title>方向幕 統合版スクロール（総枚数3）</title>
   <style>
     .container {
       width: 1134px;
@@ -30,36 +30,22 @@
   </style>
 </head>
 <body>
-  <h2>方向幕 統合版スクロール（周回対応）</h2>
+  <h2>方向幕 統合版スクロール（総枚数3）</h2>
   <div class="container">
     <div class="track" id="track">
       <!-- 画像を2セット並べてループ対応 -->
       <img src="assets/images/to/TO1.png">
       <img src="assets/images/to/TO2.png">
       <img src="assets/images/to/TO3.png">
-      <img src="assets/images/to/TO4.png">
-      <img src="assets/images/to/TO5.png">
-      <img src="assets/images/to/TO6.png">
-      <img src="assets/images/to/TO7.png">
-      <img src="assets/images/to/TO8.png">
-      <img src="assets/images/to/TO9.png">
-      <img src="assets/images/to/TO10.png">
       <!-- ループ用にもう一度 -->
       <img src="assets/images/to/TO1.png">
       <img src="assets/images/to/TO2.png">
       <img src="assets/images/to/TO3.png">
-      <img src="assets/images/to/TO4.png">
-      <img src="assets/images/to/TO5.png">
-      <img src="assets/images/to/TO6.png">
-      <img src="assets/images/to/TO7.png">
-      <img src="assets/images/to/TO8.png">
-      <img src="assets/images/to/TO9.png">
-      <img src="assets/images/to/TO10.png">
     </div>
   </div>
 
   <div>
-    <label>停止番号リスト (最大4): <input type="text" id="stopList" value="10,9,8,7"></label>
+    <label>停止番号リスト (最大4): <input type="text" id="stopList" value="3,2,1"></label>
     <button onclick="generateButtons()">▶ ボタン生成</button>
   </div>
 
@@ -68,7 +54,7 @@
   <script>
     const track = document.getElementById("track");
     const imageHeight = 529;
-    const totalImages = 10;
+    const totalImages = 3; // 総枚数を3に設定
     const loopHeight = imageHeight * totalImages; // 1セット分の高さ
     let scrollTimer = null;
     let currentIndex = 1; // 現在位置（1始まり）
