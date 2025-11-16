@@ -5,7 +5,7 @@
   <title>方向幕サンプル</title>
   <style>
     #rollsign {
-      width: 600px;   /* 表示サイズを調整 */
+      width: 600px;
       height: auto;
       border: 2px solid #333;
     }
@@ -17,7 +17,7 @@
 </head>
 <body>
   <h2>方向幕サンプル</h2>
-  <img id="rollsign" src="img1.jpg" alt="方向幕">
+  <img id="rollsign" src="assets/images/TO1.png" alt="方向幕">
 
   <div>
     <button onclick="prevImage()">◀ 前へ</button>
@@ -25,12 +25,14 @@
   </div>
 
   <script>
-    // 事前に登録した画像リスト
-    const images = [
-      "img1.jpg",
-      "img2.jpg",
-      "img3.jpg"
-    ];
+    // 画像枚数（例: 10枚なら 10）
+    const totalImages = 10;
+
+    // 連番で配列を作成
+    const images = [];
+    for (let i = 1; i <= totalImages; i++) {
+      images.push(`assets/images/TO${i}.png`);
+    }
 
     let currentIndex = 0;
     const rollsign = document.getElementById("rollsign");
