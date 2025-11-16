@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 統合版スクロール（総枚数3）</title>
+  <title>方向幕 スクロール修正版（ずれ解消）</title>
   <style>
     .container {
       width: 1134px;
@@ -30,14 +30,13 @@
   </style>
 </head>
 <body>
-  <h2>方向幕 統合版スクロール（総枚数3）</h2>
+  <h2>方向幕 スクロール修正版（総枚数3）</h2>
   <div class="container">
     <div class="track" id="track">
-      <!-- 画像を2セット並べてループ対応 -->
+      <!-- 画像を2セット並べる -->
       <img src="assets/images/to/TO1.png">
       <img src="assets/images/to/TO2.png">
       <img src="assets/images/to/TO3.png">
-      <!-- ループ用にもう一度 -->
       <img src="assets/images/to/TO1.png">
       <img src="assets/images/to/TO2.png">
       <img src="assets/images/to/TO3.png">
@@ -54,21 +53,20 @@
   <script>
     const track = document.getElementById("track");
     const imageHeight = 529;
-    const totalImages = 3; // 総枚数を3に設定
-    const loopHeight = imageHeight * totalImages; // 1セット分の高さ
+    const totalImages = 3;
+    const loopHeight = imageHeight * totalImages;
     let scrollTimer = null;
     let currentIndex = 1; // 現在位置（1始まり）
+    let offsetY = 0;      // 累積スクロール位置
 
-    // 指定番号までスクロール（周回対応）
     function scrollTo(stopIndex) {
       if (scrollTimer) clearInterval(scrollTimer);
 
-      // 前進距離を計算（周回対応）
+      // 前進距離を計算
       let distance;
       if (stopIndex >= currentIndex) {
         distance = stopIndex - currentIndex;
       } else {
-        // 戻り番号 → 周回して目的地へ
         distance = (totalImages - currentIndex) + stopIndex;
       }
 
@@ -76,42 +74,31 @@
       let moved = 0;
 
       scrollTimer = setInterval(() => {
-        const currentTransform = getComputedStyle(track).transform;
-        let currentY = 0;
-        if (currentTransform !== "none") {
-          const matrix = new WebKitCSSMatrix(currentTransform);
-          currentY = matrix.m42;
-        }
-
         const step = -10; // スクロール速度(px)
         moved += Math.abs(step);
+        offsetY += step;
 
-        let nextY = currentY + step;
-
-        // ループ処理：1セット分スクロールしたらリセット
-        if (Math.abs(nextY) >= loopHeight) {
-          nextY = 0;
-          moved = 0;
+        // ループ処理：見た目だけリセット
+        if (Math.abs(offsetY) >= loopHeight) {
+          offsetY = 0;
         }
 
-        track.style.transform = `translateY(${nextY}px)`;
+        track.style.transform = `translateY(${offsetY}px)`;
 
         if (moved >= steps) {
           clearInterval(scrollTimer);
           scrollTimer = null;
           currentIndex = stopIndex; // 現在位置更新
         }
-      }, 16); // 約60fps
+      }, 16);
     }
 
-    // 順序ラベル生成
     function ordinal(n) {
       const suffixes = ["th","st","nd","rd"];
       const v = n % 100;
       return n + (suffixes[(v-20)%10] || suffixes[v] || suffixes[0]);
     }
 
-    // ボタン生成
     function generateButtons() {
       const input = document.getElementById("stopList").value;
       const numbers = input.split(",").map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
