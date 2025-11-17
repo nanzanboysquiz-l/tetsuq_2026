@@ -18,7 +18,7 @@
       border: 2px solid #333;
       position: relative;
       margin: 40px auto;
-      background: rgba(255,255,255,0.85); /* 背景透過で見やすく */
+      background: rgba(255,255,255,0.85);
     }
     .track {
       display: flex;
@@ -28,16 +28,18 @@
     .track img {
       width: 1134px;
       height: 529px;
-      margin-bottom: 10px; /* 画像間に空白 */
+      margin-bottom: 10px;
     }
-    .buttons {
+    .controls {
       margin-top: 20px;
       text-align: center;
     }
-    .buttons button {
+    .controls button, .controls input {
       margin: 5px;
       padding: 8px 16px;
       font-size: 14px;
+    }
+    .controls button {
       background: #0078d7;
       color: #fff;
       border: none;
@@ -45,8 +47,14 @@
       cursor: pointer;
       transition: background 0.3s;
     }
-    .buttons button:hover {
+    .controls button:hover {
       background: #005a9e;
+    }
+    .controls input {
+      width: 120px;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
   </style>
 </head>
@@ -66,7 +74,20 @@
     </div>
   </div>
 
-  <div class="buttons" id="buttons"></div>
+  <div class="controls">
+    <!-- 入力→ボタン生成 -->
+    <label>停止番号リスト (最大4): 
+      <input type="text" id="stopList" value="3,2,1">
+    </label>
+    <button onclick="generateButtons()">▶ ボタン生成</button>
+
+    <!-- 直接入力スクロール -->
+    <br>
+    <input type="number" id="manualInput" min="1" max="3" placeholder="番号入力">
+    <button onclick="manualScroll()">移動</button>
+  </div>
+
+  <div class="controls" id="buttons"></div>
 
   <script>
     const track = document.getElementById("track");
@@ -114,11 +135,24 @@
       }, 16);
     }
 
-    // ボタン生成（例: TO1〜TO3）
+    // 入力欄から直接移動
+    function manualScroll() {
+      const m = parseInt(document.getElementById("manualInput").value, 10);
+      if (!isNaN(m) && m >= 1 && m <= 3) {
+        scrollTo(m);
+      } else {
+        alert("1〜3の番号を入力してください");
+      }
+    }
+
+    // 入力リストからボタン生成
     function generateButtons() {
+      const input = document.getElementById("stopList").value;
+      const numbers = input.split(",").map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
       const buttonsDiv = document.getElementById("buttons");
       buttonsDiv.innerHTML = "";
-      [1,2,3].forEach((m, idx) => {
+
+      numbers.slice(0,4).forEach((m, idx) => {
         const btn = document.createElement("button");
         btn.textContent = `TO${m}へ`;
         btn.onclick = () => scrollTo(m);
