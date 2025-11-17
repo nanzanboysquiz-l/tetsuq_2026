@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 スクロール統合版</title>
+  <title>方向幕 スクロール統合版（m→TOm, 内部m+3）</title>
   <style>
     .container {
       width: 1134px;
@@ -31,7 +31,7 @@
   </style>
 </head>
 <body>
-  <h2>方向幕 スクロール統合版</h2>
+  <h2>方向幕 スクロール統合版（m→TOm, 内部m+3）</h2>
   <div class="container">
     <div class="track" id="track">
       <!-- 特殊画像（番号対象外） -->
@@ -39,16 +39,16 @@
       <img src="assets/images/to/TOOiS.png">
       <img src="assets/images/to/TOWhite.png">
       <!-- 通常幕（番号対象） -->
-      <img src="assets/images/to/TO1.png" data-index="4">
-      <img src="assets/images/to/TO2.png" data-index="5">
-      <img src="assets/images/to/TO3.png" data-index="6">
+      <img src="assets/images/to/TO1.png">
+      <img src="assets/images/to/TO2.png">
+      <img src="assets/images/to/TO3.png">
       <!-- 最後尾にホワイト -->
-      <img src="assets/images/to/TOWhite.png" data-index="7">
+      <img src="assets/images/to/TOWhite.png">
     </div>
   </div>
 
   <div>
-    <label>停止番号リスト (最大4): <input type="text" id="stopList" value="6,5,4"></label>
+    <label>停止番号リスト (最大4): <input type="text" id="stopList" value="3,2,1"></label>
     <button onclick="generateButtons()">▶ ボタン生成</button>
   </div>
 
@@ -59,15 +59,14 @@
     const imageHeight = 529 + 10; // 画像高さ＋空白分
     const totalImages = 7; // 配列全体（特殊含む）
     let scrollTimer = null;
-    let currentIndex = 4; // 初期位置を TO1.png (配列4番目) とする
+    let currentIndex = 1; // 初期位置を配列先頭(TOOiS.png)に修正
     let offsetY = 0;
 
-    // 指定番号までスクロール
-    function scrollTo(n) {
+    // 指定番号 m → 内部位置 m+3
+    function scrollTo(m) {
       if (scrollTimer) clearInterval(scrollTimer);
 
-      // TO(n-3) に対応させる → 配列上の位置番号
-      const targetIndex = n; 
+      const targetIndex = m + 3; // 内部位置
       let distance;
       let direction;
 
@@ -78,7 +77,7 @@
         runScroll(distance, direction, targetIndex);
       } else if (targetIndex < currentIndex) {
         // 若番 → 現在位置 k+1 まで進んでから逆方向
-        distance = (totalImages - currentIndex); 
+        distance = (totalImages - currentIndex);
         direction = -1;
         runScroll(distance, direction, currentIndex + 1, () => {
           const backDistance = currentIndex - targetIndex;
@@ -121,10 +120,10 @@
       const buttonsDiv = document.getElementById("buttons");
       buttonsDiv.innerHTML = "";
 
-      numbers.slice(0,4).forEach((num, idx) => {
+      numbers.slice(0,4).forEach((m, idx) => {
         const btn = document.createElement("button");
-        btn.textContent = `${ordinal(idx+1)} → Stop at TO${num-3}`;
-        btn.onclick = () => scrollTo(num);
+        btn.textContent = `${ordinal(idx+1)} → Stop at TO${m}`;
+        btn.onclick = () => scrollTo(m);
         buttonsDiv.appendChild(btn);
       });
     }
