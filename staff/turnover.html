@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>ターンオーバー</title>
   <style>
+    / Webフォント読み込み /
     @font-face {
       font-family: 'JF Dot Ayu Gothic 20';
       src: url('assets/fonts/JF-Dot-Ayu20.ttf') format('truetype');
@@ -20,19 +21,25 @@
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      padding-top: 40px;
+      padding-top: 20px;
     }
+
     .main-wrapper {
       display: flex;
-      gap: 30px;
+      gap: 20px;
+      flex-wrap: wrap; / 画面が狭い場合は縦並び /
+      justify-content: center;
     }
+
+    / 幕表示枠 /
     .container {
-      width: 1134px;
-      height: 529px;
+      width: 100%;
+      max-width: 1134px;
+      aspect-ratio: 1134 / 529; / アスペクト比維持 /
       overflow: hidden;
       border: 2px solid #333;
-      position: relative;
       background: rgba(255,255,255,0.85);
+      position: relative;
     }
     .track {
       display: flex;
@@ -40,12 +47,14 @@
       transform: translateY(0);
     }
     .track img {
-      width: 1134px;
-      height: 529px;
-      margin-bottom: 10px;
+      width: 100%;
+      height: 100%;
+      object-fit: cover; / 枠に合わせて拡縮 /
     }
+
+    / コントロールボタン /
     .controls {
-      margin-top: 20px;
+      margin-top: 10px;
       text-align: center;
     }
     .controls button, .controls input {
@@ -70,6 +79,148 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
+
+    / 数字表示器 /
+    .number-display {
+      width: 250px;
+      height: 250px;
+      background: #333333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+    .number-display span {
+      font-family: 'JF Dot Ayu Gothic 20', monospace;
+      font-size: 200px; / 大きさを200pxに /
+      color: orange;
+    }
+  </style>
+</head>
+<body>
+  <div class="main-wrapper">
+    <!-- 幕回し機構 -->
+    <div>
+      <div class="container">
+        <div class="track" id="track">
+          <!-- 特殊画像 -->
+          <img src="assets/images/to/TOOiS.png">
+          <img src="assets/images/to/TOOiS.png">
+          <img src="assets/images/to/TOWhite.png">
+          <!-- 通常幕 -->
+          <img src="assets/images/to/TO1.png">
+          <img src="assets/images/to/TO2.png">
+          <img src="assets/images/to/TO3.png">
+          <!-- 最後尾にホワイト -->
+          <img src="assets/images/to/TOWhite.png">
+        </div>
+      </div>
+
+      <div class="controls">
+        <label>停止番号リスト (最大4): 
+          <input type="text" id="stopList" value="3,2,1">
+        </label>
+        <button onclick="generateButtons()">▶ ボタン生成</button>
+        <br>
+        <input type="number" id="manualInput" min="1" max="3" placeholder="番号入力">
+        <button onclick="manualScroll()">移動</button>
+      </div>
+
+      <div class="controls" id="buttons"></div>
+    </div>
+
+    <!-- 数字表示器（クリックで+1、5の次は0） -->
+    <div class="number-display" onclick="increment()">
+      <span id="numberValue">0</span>
+    </div>
+  </div>
+
+  <script>
+    const track = document.getElementById("track");
+    const imageHeight = 529 + 10;
+    let scrollTimer = null;
+    let currentIndex = 1;
+    let offsetY = 0;
+
+    // 幕回しスクロール
+    function scrollTo(m) {
+      if (scrollTimer) clearInterval(scrollTimer);
+      const targetIndex = m + 3;
+      if (targetIndex > currentIndex) {
+        const distance = targetIndex - currentIndex;
+        runScroll(distance, -1, targetIndex);
+      } else if (targetIndex < currentIndex) {
+        runScroll(1, -1, currentIndex + 1, () => {
+          const backDistance = (currentIndex) - targetIndex;
+          runScroll(backDistance, +1, targetIndex);
+        });
+      }
+    }
+    function runScroll(distance, direction, newIndex, callback) {
+      let steps = distance * imageHeight;
+      let moved = 0;
+      scrollTimer = setInterval(() => {
+        moved += Math.abs(direction * 10);
+        offsetY += direction * 10;
+        track.style.transform = translateY(${offsetY}px);
+        if (moved >= steps) {
+          clearInterval(scrollTimer);
+          scrollTimer = null;
+          currentIndex = newIndex;
+          if (callback) callback();
+        }
+      }, 16);
+    }
+    function manualScroll() {
+      const m = parseInt(document.getElementById("manualInput").value, 10);
+      if (!isNaN(m) && m >= 1 && m <= 3) {
+        scrollTo(m);
+      } else {
+        alert("1〜3の番号を入力してください");
+      }
+    }
+
+    // 生成順序ラベル
+    function ordinalByIndex(i) {
+      const suffixes = ["th","st","nd","rd"];
+      const v = i % 100;
+      return i + (suffixes[(v-20)%10] || suffixes[v] || suffixes[0]);
+    }
+
+    function generateButtons() {
+      const input = document.getElementById("stopList").value;
+      const numbers = input.split(",").map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
+      const buttonsDiv = document.getElementById("buttons");
+      buttonsDiv.innerHTML = "";
+      numbers.slice(0,4).forEach((m, idx) => {
+        const btn = document.createElement("button");
+        btn.textContent = ordinalByIndex(idx+1); // 生成順に1st,2nd,3rd...
+        btn.onclick = () => {
+          scrollTo(m);
+          numberValue = idx+1; // ボタン順に数字表示を変更
+          drawNumber();
+        };
+        buttonsDiv.appendChild(btn);
+      });
+    }
+    generateButtons();
+
+    // 数字表示器
+    let numberValue = 0;
+    const numberSpan = document.getElementById("numberValue");
+
+    function drawNumber() {
+      numberSpan.textContent = numberValue;
+    }
+    function increment() {
+      numberValue++;
+      if (numberValue > 5) numberValue = 0;
+      drawNumber();
+    }
+    drawNumber();
+  </script>
+</body>
+</html>    }
     .number-display {
       width: 250px;
       height: 250px;
