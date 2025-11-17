@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 スクロール統合版（m→TOm, 内部m+3）</title>
+  <title>方向幕 スクロール統合版（若番はk+1から逆移動）</title>
   <style>
     .container {
       width: 1134px;
@@ -31,14 +31,14 @@
   </style>
 </head>
 <body>
-  <h2>方向幕 スクロール統合版（m→TOm, 内部m+3）</h2>
+  <h2>方向幕 スクロール統合版（若番はk+1から逆移動）</h2>
   <div class="container">
     <div class="track" id="track">
-      <!-- 特殊画像（番号対象外） -->
+      <!-- 特殊画像 -->
       <img src="assets/images/to/TOOiS.png">
       <img src="assets/images/to/TOOiS.png">
       <img src="assets/images/to/TOWhite.png">
-      <!-- 通常幕（番号対象） -->
+      <!-- 通常幕 -->
       <img src="assets/images/to/TO1.png">
       <img src="assets/images/to/TO2.png">
       <img src="assets/images/to/TO3.png">
@@ -56,17 +56,17 @@
 
   <script>
     const track = document.getElementById("track");
-    const imageHeight = 529 + 10; // 画像高さ＋空白分
-    const totalImages = 7; // 配列全体（特殊含む）
+    const imageHeight = 529 + 10;
+    const totalImages = 7; // 配列全体
     let scrollTimer = null;
-    let currentIndex = 1; // 初期位置を配列先頭(TOOiS.png)に修正
+    let currentIndex = 1; // 初期位置は配列先頭
     let offsetY = 0;
 
     // 指定番号 m → 内部位置 m+3
     function scrollTo(m) {
       if (scrollTimer) clearInterval(scrollTimer);
 
-      const targetIndex = m + 3; // 内部位置
+      const targetIndex = m + 3; // TOm の内部位置
       let distance;
       let direction;
 
@@ -77,10 +77,10 @@
         runScroll(distance, direction, targetIndex);
       } else if (targetIndex < currentIndex) {
         // 若番 → 現在位置 k+1 まで進んでから逆方向
-        distance = (totalImages - currentIndex);
+        distance = 1; // k → k+1 の1枚分だけ進む
         direction = -1;
         runScroll(distance, direction, currentIndex + 1, () => {
-          const backDistance = currentIndex - targetIndex;
+          const backDistance = (currentIndex + 1) - targetIndex;
           runScroll(backDistance, +1, targetIndex);
         });
       }
