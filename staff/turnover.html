@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>幕回し表示器</title>
+  <title>幕回し＋ドット数字表示器</title>
   <style>
     body {
       margin: 0;
@@ -10,6 +10,10 @@
       font-family: "Segoe UI", sans-serif;
       background: url("assets/images/to/TO背景.png") no-repeat center center fixed;
       background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 40px;
     }
     .container {
       width: 1134px;
@@ -17,7 +21,6 @@
       overflow: hidden;
       border: 2px solid #333;
       position: relative;
-      margin: 40px auto;
       background: rgba(255,255,255,0.85);
     }
     .track {
@@ -50,82 +53,85 @@
     .controls button:hover {
       background: #005a9e;
     }
-    .controls input {
-      width: 120px;
+    /* ドット数字表示器 */
+    .dot-display {
+      margin-left: 30px; /* 幕回し機構の横に配置 */
       text-align: center;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+    }
+    canvas {
+      border: 2px solid #333;
+      background: #000;
+      display: block;
+      margin: 0 auto 10px auto;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="track" id="track">
-      <!-- 特殊画像 -->
-      <img src="assets/images/to/TOOiS.png">
-      <img src="assets/images/to/TOOiS.png">
-      <img src="assets/images/to/TOWhite.png">
-      <!-- 通常幕 -->
-      <img src="assets/images/to/TO1.png">
-      <img src="assets/images/to/TO2.png">
-      <img src="assets/images/to/TO3.png">
-      <!-- 最後尾にホワイト -->
-      <img src="assets/images/to/TOWhite.png">
+  <!-- 幕回し機構 -->
+  <div>
+    <div class="container">
+      <div class="track" id="track">
+        <!-- 特殊画像 -->
+        <img src="assets/images/to/TOOiS.png">
+        <img src="assets/images/to/TOOiS.png">
+        <img src="assets/images/to/TOWhite.png">
+        <!-- 通常幕 -->
+        <img src="assets/images/to/TO1.png">
+        <img src="assets/images/to/TO2.png">
+        <img src="assets/images/to/TO3.png">
+        <!-- 最後尾にホワイト -->
+        <img src="assets/images/to/TOWhite.png">
+      </div>
     </div>
+
+    <div class="controls">
+      <label>停止番号リスト (最大4): 
+        <input type="text" id="stopList" value="3,2,1">
+      </label>
+      <button onclick="generateButtons()">▶ ボタン生成</button>
+      <br>
+      <input type="number" id="manualInput" min="1" max="3" placeholder="番号入力">
+      <button onclick="manualScroll()">移動</button>
+    </div>
+
+    <div class="controls" id="buttons"></div>
   </div>
 
-  <div class="controls">
-    <!-- 入力→ボタン生成 -->
-    <label>停止番号リスト (最大4): 
-      <input type="text" id="stopList" value="3,2,1">
-    </label>
-    <button onclick="generateButtons()">▶ ボタン生成</button>
-
-    <!-- 直接入力スクロール -->
-    <br>
-    <input type="number" id="manualInput" min="1" max="3" placeholder="番号入力">
-    <button onclick="manualScroll()">移動</button>
+  <!-- ドット数字表示器 -->
+  <div class="dot-display">
+    <canvas id="dotCanvas" width="160" height="160"></canvas>
+    <button onclick="decrement()">－</button>
+    <button onclick="increment()">＋</button>
   </div>
-
-  <div class="controls" id="buttons"></div>
 
   <script>
     const track = document.getElementById("track");
     const imageHeight = 529 + 10;
     let scrollTimer = null;
-    let currentIndex = 1; // 初期位置は配列先頭
+    let currentIndex = 1;
     let offsetY = 0;
 
-    // 指定番号 m → 内部位置 index = m+3
+    // 幕回しスクロール
     function scrollTo(m) {
       if (scrollTimer) clearInterval(scrollTimer);
-
-      const targetIndex = m + 3; // TOm の内部位置
-
+      const targetIndex = m + 3;
       if (targetIndex > currentIndex) {
-        // 老番 → 前方向
         const distance = targetIndex - currentIndex;
         runScroll(distance, -1, targetIndex);
       } else if (targetIndex < currentIndex) {
-        // 若番 → 現在位置 k+1 まで進む → 逆方向
         runScroll(1, -1, currentIndex + 1, () => {
           const backDistance = (currentIndex) - targetIndex;
           runScroll(backDistance, +1, targetIndex);
         });
       }
     }
-
-    // スクロール処理
     function runScroll(distance, direction, newIndex, callback) {
       let steps = distance * imageHeight;
       let moved = 0;
-
       scrollTimer = setInterval(() => {
         moved += Math.abs(direction * 10);
         offsetY += direction * 10;
-
         track.style.transform = `translateY(${offsetY}px)`;
-
         if (moved >= steps) {
           clearInterval(scrollTimer);
           scrollTimer = null;
@@ -134,8 +140,6 @@
         }
       }, 16);
     }
-
-    // 入力欄から直接移動
     function manualScroll() {
       const m = parseInt(document.getElementById("manualInput").value, 10);
       if (!isNaN(m) && m >= 1 && m <= 3) {
@@ -144,24 +148,48 @@
         alert("1〜3の番号を入力してください");
       }
     }
-
-    // 入力リストからボタン生成
     function generateButtons() {
       const input = document.getElementById("stopList").value;
       const numbers = input.split(",").map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
       const buttonsDiv = document.getElementById("buttons");
       buttonsDiv.innerHTML = "";
-
-      numbers.slice(0,4).forEach((m, idx) => {
+      numbers.slice(0,4).forEach((m) => {
         const btn = document.createElement("button");
         btn.textContent = `TO${m}へ`;
         btn.onclick = () => scrollTo(m);
         buttonsDiv.appendChild(btn);
       });
     }
-
-    // 初期化
     generateButtons();
+
+    // ドット数字表示器
+    const canvas = document.getElementById("dotCanvas");
+    const ctx = canvas.getContext("2d");
+    let numberValue = 0;
+
+    // 簡易的なドットフォント（16x16の中で描画）
+    function drawNumber(num) {
+      ctx.clearRect(0,0,160,160);
+      ctx.fillStyle = "#0f0";
+      ctx.font = "bold 120px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(num.toString(), 80, 90);
+    }
+
+    function increment() {
+      numberValue++;
+      if (numberValue > 9) numberValue = 0;
+      drawNumber(numberValue);
+    }
+    function decrement() {
+      numberValue--;
+      if (numberValue < 0) numberValue = 9;
+      drawNumber(numberValue);
+    }
+
+    // 初期表示
+    drawNumber(numberValue);
   </script>
 </body>
 </html>
