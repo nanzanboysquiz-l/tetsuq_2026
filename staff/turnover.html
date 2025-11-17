@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 スクロール（位置番号整列版）</title>
+  <title>方向幕 スクロール（番号対応修正版）</title>
   <style>
     .container {
       width: 1134px;
@@ -31,18 +31,18 @@
   </style>
 </head>
 <body>
-  <h2>方向幕 スクロール（位置番号整列版）</h2>
+  <h2>方向幕 スクロール（番号対応修正版）</h2>
   <div class="container">
     <div class="track" id="track">
-      <!-- 特殊画像（固定位置） -->
+      <!-- 特殊画像（番号対象外） -->
       <img src="assets/images/to/TOOiS.png">
       <img src="assets/images/to/TOOiS.png">
       <img src="assets/images/to/TOWhite.png">
-      <!-- 通常幕（番号付き） -->
-      <img src="assets/images/to/TO1.png">
-      <img src="assets/images/to/TO2.png">
-      <img src="assets/images/to/TO3.png">
-      <!-- 最後尾にホワイト -->
+      <!-- 通常幕（番号対象） -->
+      <img src="assets/images/to/TO1.png" data-index="1">
+      <img src="assets/images/to/TO2.png" data-index="2">
+      <img src="assets/images/to/TO3.png" data-index="3">
+      <!-- 最後尾にホワイト（番号対象外） -->
       <img src="assets/images/to/TOWhite.png">
     </div>
   </div>
