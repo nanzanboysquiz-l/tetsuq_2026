@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>幕回し＋ドット数字表示器</title>
+  <title>幕回し＋数字表示器</title>
   <style>
     body {
       margin: 0;
@@ -14,6 +14,11 @@
       justify-content: center;
       align-items: flex-start;
       padding-top: 40px;
+    }
+    .main-wrapper {
+      display: flex;
+      align-items: flex-end; /* 下端に揃える */
+      gap: 30px; /* 幕機構と数字表示器の間隔 */
     }
     .container {
       width: 1134px;
@@ -53,55 +58,77 @@
     .controls button:hover {
       background: #005a9e;
     }
-    /* ドット数字表示器 */
-    .dot-display {
-      margin-left: 30px; /* 幕回し機構の横に配置 */
+    .controls input {
+      width: 120px;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    /* 数字表示器 */
+    .number-display {
       text-align: center;
     }
-    canvas {
-      border: 2px solid #333;
-      background: #000;
+    .number-display span {
+      font-family: "JF Dot Ayu Gothic 20", monospace;
+      font-size: 80px;
+      color: orange;
       display: block;
-      margin: 0 auto 10px auto;
+      margin-bottom: 10px;
+    }
+    .number-display button {
+      margin: 5px;
+      padding: 8px 16px;
+      font-size: 14px;
+      background: #0078d7;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .number-display button:hover {
+      background: #005a9e;
     }
   </style>
 </head>
 <body>
-  <!-- 幕回し機構 -->
-  <div>
-    <div class="container">
-      <div class="track" id="track">
-        <!-- 特殊画像 -->
-        <img src="assets/images/to/TOOiS.png">
-        <img src="assets/images/to/TOOiS.png">
-        <img src="assets/images/to/TOWhite.png">
-        <!-- 通常幕 -->
-        <img src="assets/images/to/TO1.png">
-        <img src="assets/images/to/TO2.png">
-        <img src="assets/images/to/TO3.png">
-        <!-- 最後尾にホワイト -->
-        <img src="assets/images/to/TOWhite.png">
+  <div class="main-wrapper">
+    <!-- 幕回し機構 -->
+    <div>
+      <div class="container">
+        <div class="track" id="track">
+          <!-- 特殊画像 -->
+          <img src="assets/images/to/TOOiS.png">
+          <img src="assets/images/to/TOOiS.png">
+          <img src="assets/images/to/TOWhite.png">
+          <!-- 通常幕 -->
+          <img src="assets/images/to/TO1.png">
+          <img src="assets/images/to/TO2.png">
+          <img src="assets/images/to/TO3.png">
+          <!-- 最後尾にホワイト -->
+          <img src="assets/images/to/TOWhite.png">
+        </div>
       </div>
+
+      <div class="controls">
+        <label>停止番号リスト (最大4): 
+          <input type="text" id="stopList" value="3,2,1">
+        </label>
+        <button onclick="generateButtons()">▶ ボタン生成</button>
+        <br>
+        <input type="number" id="manualInput" min="1" max="3" placeholder="番号入力">
+        <button onclick="manualScroll()">移動</button>
+      </div>
+
+      <div class="controls" id="buttons"></div>
     </div>
 
-    <div class="controls">
-      <label>停止番号リスト (最大4): 
-        <input type="text" id="stopList" value="3,2,1">
-      </label>
-      <button onclick="generateButtons()">▶ ボタン生成</button>
-      <br>
-      <input type="number" id="manualInput" min="1" max="3" placeholder="番号入力">
-      <button onclick="manualScroll()">移動</button>
+    <!-- 数字表示器（下端揃え） -->
+    <div class="number-display">
+      <span id="numberValue">0</span>
+      <button onclick="decrement()">－</button>
+      <button onclick="increment()">＋</button>
     </div>
-
-    <div class="controls" id="buttons"></div>
-  </div>
-
-  <!-- ドット数字表示器 -->
-  <div class="dot-display">
-    <canvas id="dotCanvas" width="160" height="160"></canvas>
-    <button onclick="decrement()">－</button>
-    <button onclick="increment()">＋</button>
   </div>
 
   <script>
@@ -162,34 +189,24 @@
     }
     generateButtons();
 
-    // ドット数字表示器
-    const canvas = document.getElementById("dotCanvas");
-    const ctx = canvas.getContext("2d");
+    // 数字表示器
     let numberValue = 0;
+    const numberSpan = document.getElementById("numberValue");
 
-    // 簡易的なドットフォント（16x16の中で描画）
-    function drawNumber(num) {
-      ctx.clearRect(0,0,160,160);
-      ctx.fillStyle = "#0f0";
-      ctx.font = "bold 120px monospace";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(num.toString(), 80, 90);
+    function drawNumber() {
+      numberSpan.textContent = numberValue;
     }
-
     function increment() {
       numberValue++;
       if (numberValue > 9) numberValue = 0;
-      drawNumber(numberValue);
+      drawNumber();
     }
     function decrement() {
       numberValue--;
       if (numberValue < 0) numberValue = 9;
-      drawNumber(numberValue);
+      drawNumber();
     }
-
-    // 初期表示
-    drawNumber(numberValue);
+    drawNumber();
   </script>
 </body>
 </html>
