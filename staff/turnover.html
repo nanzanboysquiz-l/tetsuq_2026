@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>幕回し＋数字表示器</title>
+  <title>ターンオーバー</title>
   <style>
     @font-face {
       font-family: 'JF Dot Ayu Gothic 20';
@@ -83,7 +83,7 @@
     }
     .number-display span {
       font-family: 'JF Dot Ayu Gothic 20', monospace;
-      font-size: 200px;
+      font-size: 200px; /* ← 200pxに変更 */
       color: orange;
     }
   </style>
@@ -182,7 +182,11 @@
       numbers.slice(0,4).forEach((m, idx) => {
         const btn = document.createElement("button");
         btn.textContent = ordinalByIndex(idx+1); // 生成順に1st,2nd,3rd...
-        btn.onclick = () => scrollTo(m);
+        btn.onclick = () => {
+          scrollTo(m);
+          numberValue = idx+1; // ボタン順に数字表示を変更
+          drawNumber();
+        };
         buttonsDiv.appendChild(btn);
       });
     }
