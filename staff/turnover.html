@@ -66,20 +66,15 @@
       if (scrollTimer) clearInterval(scrollTimer);
 
       const targetIndex = m + 3; // TOm の内部位置
-      let distance;
-      let direction;
 
       if (targetIndex > currentIndex) {
         // 老番 → 前方向
-        distance = targetIndex - currentIndex;
-        direction = -1;
-        runScroll(distance, direction, targetIndex);
+        const distance = targetIndex - currentIndex;
+        runScroll(distance, -1, targetIndex);
       } else if (targetIndex < currentIndex) {
         // 若番 → 現在位置 k+1 まで進む → 逆方向
-        distance = 1; // k → k+1 の1枚分
-        direction = -1;
-        runScroll(distance, direction, currentIndex + 1, () => {
-          const backDistance = (currentIndex + 1) - targetIndex;
+        runScroll(1, -1, currentIndex + 1, () => {
+          const backDistance = (currentIndex) - targetIndex;
           runScroll(backDistance, +1, targetIndex);
         });
       }
@@ -99,7 +94,7 @@
         if (moved >= steps) {
           clearInterval(scrollTimer);
           scrollTimer = null;
-          currentIndex = newIndex;
+          currentIndex = newIndex; // ここで必ず更新
           if (callback) callback();
         }
       }, 16);
