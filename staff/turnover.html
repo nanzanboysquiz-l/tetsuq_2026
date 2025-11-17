@@ -25,7 +25,6 @@
     }
     .main-wrapper {
       display: flex;
-      align-items: flex-end; /* 下端揃え */
       gap: 30px; /* 幕機構と数字表示器の間隔 */
     }
     .container {
@@ -72,12 +71,15 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    /* 数字表示器（250x250px・下端揃え） */
+    /* 数字表示器（250x250px・幕枠下端に揃え） */
     .number-display {
       width: 250px;
       height: 250px;
       background: #333333;
+      position: relative;
+      top: calc(529px - 250px); /* 幕枠上端から(529-250)px下に配置 */
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
     }
@@ -85,6 +87,21 @@
       font-family: 'JF Dot Ayu Gothic 20', monospace;
       font-size: 120px;
       color: orange;
+      margin-bottom: 10px;
+    }
+    .number-display button {
+      margin: 5px;
+      padding: 8px 16px;
+      font-size: 14px;
+      background: #0078d7;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .number-display button:hover {
+      background: #005a9e;
     }
   </style>
 </head>
@@ -120,9 +137,13 @@
       <div class="controls" id="buttons"></div>
     </div>
 
-    <!-- 数字表示器（下端揃え・250x250px） -->
+    <!-- 数字表示器（下端揃え・250x250px・増減ボタンあり） -->
     <div class="number-display">
       <span id="numberValue">0</span>
+      <div>
+        <button onclick="decrement()">－</button>
+        <button onclick="increment()">＋</button>
+      </div>
     </div>
   </div>
 
