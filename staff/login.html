@@ -87,6 +87,7 @@
       const passcode = document.getElementById("passcode").value.trim();
 
       // 仮の認証処理（実際はサーバー側で検証）
+      const passmath = (1+114)*114/2-33
       if (passcode === "6522") {
         window.location.href = "dashboard.html"; // ログイン後のページへ
       } else {
