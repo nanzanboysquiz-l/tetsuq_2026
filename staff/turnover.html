@@ -49,6 +49,7 @@
       width: 100%;
       height: auto;
       display: block;
+      margin-bottom: calc(100% * 10 / 529); /* 高さに対して相対的に余白を維持 */
     }
 
     /* コントロールボタン */
@@ -140,16 +141,11 @@
     let currentIndex = 1;
     let offsetY = 0;
 
-    // 実際の画像高さを取得
-    function getImageHeight() {
-      const img = track.querySelector("img");
-      return img ? img.clientHeight : 529;
-    }
-
     // 幕回しスクロール
     function scrollTo(m) {
       if (scrollTimer) clearInterval(scrollTimer);
-      const imageHeight = getImageHeight();
+      const img = track.querySelector("img");
+      const imageHeight = img ? img.clientHeight + (img.clientHeight * 10 / 529) : 539;
       const targetIndex = m + 3;
       if (targetIndex > currentIndex) {
         const distance = targetIndex - currentIndex;
