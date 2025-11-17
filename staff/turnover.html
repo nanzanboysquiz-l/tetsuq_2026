@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>幕回し＋数字表示器</title>
   <style>
-    /* Webフォント読み込み */
     @font-face {
       font-family: 'JF Dot Ayu Gothic 20';
       src: url('assets/fonts/JF-Dot-Ayu20.ttf') format('truetype');
@@ -25,7 +24,7 @@
     }
     .main-wrapper {
       display: flex;
-      gap: 30px; /* 幕機構と数字表示器の間隔 */
+      gap: 30px;
     }
     .container {
       width: 1134px;
@@ -71,21 +70,20 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    /* 数字表示器（250x250px・幕枠下端に揃え） */
     .number-display {
       width: 250px;
       height: 250px;
       background: #333333;
       position: relative;
-      top: calc(529px - 250px); /* 幕枠上端から(529-250)px下に配置 */
+      top: calc(529px - 250px);
       display: flex;
       justify-content: center;
       align-items: center;
-      cursor: pointer; /* クリック可能に */
+      cursor: pointer;
     }
     .number-display span {
       font-family: 'JF Dot Ayu Gothic 20', monospace;
-      font-size: 200px;
+      font-size: 120px;
       color: orange;
     }
   </style>
@@ -96,15 +94,12 @@
     <div>
       <div class="container">
         <div class="track" id="track">
-          <!-- 特殊画像 -->
           <img src="assets/images/to/TOOiS.png">
           <img src="assets/images/to/TOOiS.png">
           <img src="assets/images/to/TOWhite.png">
-          <!-- 通常幕 -->
           <img src="assets/images/to/TO1.png">
           <img src="assets/images/to/TO2.png">
           <img src="assets/images/to/TO3.png">
-          <!-- 最後尾にホワイト -->
           <img src="assets/images/to/TOWhite.png">
         </div>
       </div>
@@ -122,7 +117,7 @@
       <div class="controls" id="buttons"></div>
     </div>
 
-    <!-- 数字表示器（クリックで+1、5の次は0） -->
+    <!-- 数字表示器 -->
     <div class="number-display" onclick="increment()">
       <span id="numberValue">0</span>
     </div>
@@ -135,7 +130,6 @@
     let currentIndex = 1;
     let offsetY = 0;
 
-    // 幕回しスクロール
     function scrollTo(m) {
       if (scrollTimer) clearInterval(scrollTimer);
       const targetIndex = m + 3;
@@ -172,6 +166,14 @@
         alert("1〜3の番号を入力してください");
       }
     }
+
+    // 序数ラベル生成用
+    function ordinal(n) {
+      const suffixes = ["th","st","nd","rd"];
+      const v = n % 100;
+      return n + (suffixes[(v-20)%10] || suffixes[v] || suffixes[0]);
+    }
+
     function generateButtons() {
       const input = document.getElementById("stopList").value;
       const numbers = input.split(",").map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
@@ -179,7 +181,7 @@
       buttonsDiv.innerHTML = "";
       numbers.slice(0,4).forEach((m) => {
         const btn = document.createElement("button");
-        btn.textContent = `TO${m}へ`;
+        btn.textContent = ordinal(m); // 序数ラベル
         btn.onclick = () => scrollTo(m);
         buttonsDiv.appendChild(btn);
       });
@@ -195,7 +197,7 @@
     }
     function increment() {
       numberValue++;
-      if (numberValue > 5) numberValue = 0; // 5の次は0
+      if (numberValue > 5) numberValue = 0;
       drawNumber();
     }
     drawNumber();
