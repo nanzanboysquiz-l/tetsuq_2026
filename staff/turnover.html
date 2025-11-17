@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>ターンオーバー</title>
   <style>
-    /* Webフォント読み込み */
     @font-face {
       font-family: 'JF Dot Ayu Gothic 20';
       src: url('assets/fonts/JF-Dot-Ayu20.ttf') format('truetype');
@@ -48,8 +47,8 @@
     }
     .track img {
       width: 100%;
-      height: 100%;
-      object-fit: cover; /* 枠に合わせて拡縮 */
+      height: auto;
+      display: block;
     }
 
     /* コントロールボタン */
@@ -92,7 +91,7 @@
     }
     .number-display span {
       font-family: 'JF Dot Ayu Gothic 20', monospace;
-      font-size: 200px; /* 大きさを200pxに */
+      font-size: 200px;
       color: orange;
     }
   </style>
@@ -137,26 +136,33 @@
 
   <script>
     const track = document.getElementById("track");
-    const imageHeight = 529 + 10;
     let scrollTimer = null;
     let currentIndex = 1;
     let offsetY = 0;
 
+    // 実際の画像高さを取得
+    function getImageHeight() {
+      const img = track.querySelector("img");
+      return img ? img.clientHeight : 529;
+    }
+
     // 幕回しスクロール
     function scrollTo(m) {
       if (scrollTimer) clearInterval(scrollTimer);
+      const imageHeight = getImageHeight();
       const targetIndex = m + 3;
       if (targetIndex > currentIndex) {
         const distance = targetIndex - currentIndex;
-        runScroll(distance, -1, targetIndex);
+        runScroll(distance, -1, targetIndex, imageHeight);
       } else if (targetIndex < currentIndex) {
-        runScroll(1, -1, currentIndex + 1, () => {
+        runScroll(1, -1, currentIndex + 1, imageHeight, () => {
           const backDistance = (currentIndex) - targetIndex;
-          runScroll(backDistance, +1, targetIndex);
+          runScroll(backDistance, +1, targetIndex, imageHeight);
         });
       }
     }
-    function runScroll(distance, direction, newIndex, callback) {
+
+    function runScroll(distance, direction, newIndex, imageHeight, callback) {
       let steps = distance * imageHeight;
       let moved = 0;
       scrollTimer = setInterval(() => {
@@ -171,6 +177,7 @@
         }
       }, 16);
     }
+
     function manualScroll() {
       const m = parseInt(document.getElementById("manualInput").value, 10);
       if (!isNaN(m) && m >= 1 && m <= 3) {
