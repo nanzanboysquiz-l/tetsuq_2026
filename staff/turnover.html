@@ -79,29 +79,14 @@
       position: relative;
       top: calc(529px - 250px); /* 幕枠上端から(529-250)px下に配置 */
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
+      cursor: pointer; /* クリック可能に */
     }
     .number-display span {
       font-family: 'JF Dot Ayu Gothic 20', monospace;
       font-size: 120px;
       color: orange;
-      margin-bottom: 10px;
-    }
-    .number-display button {
-      margin: 5px;
-      padding: 8px 16px;
-      font-size: 14px;
-      background: #0078d7;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .number-display button:hover {
-      background: #005a9e;
     }
   </style>
 </head>
@@ -137,13 +122,9 @@
       <div class="controls" id="buttons"></div>
     </div>
 
-    <!-- 数字表示器（下端揃え・250x250px・増減ボタンあり） -->
-    <div class="number-display">
+    <!-- 数字表示器（クリックで+1、5の次は0） -->
+    <div class="number-display" onclick="increment()">
       <span id="numberValue">0</span>
-      <div>
-        <button onclick="decrement()">－</button>
-        <button onclick="increment()">＋</button>
-      </div>
     </div>
   </div>
 
@@ -214,12 +195,7 @@
     }
     function increment() {
       numberValue++;
-      if (numberValue > 9) numberValue = 0;
-      drawNumber();
-    }
-    function decrement() {
-      numberValue--;
-      if (numberValue < 0) numberValue = 9;
+      if (numberValue > 5) numberValue = 0; // 5の次は0
       drawNumber();
     }
     drawNumber();
