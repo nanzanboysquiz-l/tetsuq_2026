@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 スクロール（TOn対応＋空白）</title>
+  <title>方向幕 スクロール（位置番号整列版）</title>
   <style>
     .container {
       width: 1134px;
@@ -31,14 +31,14 @@
   </style>
 </head>
 <body>
-  <h2>方向幕 スクロール（TOn対応＋空白）</h2>
+  <h2>方向幕 スクロール（位置番号整列版）</h2>
   <div class="container">
     <div class="track" id="track">
-      <!-- 先頭に特殊3枚 -->
+      <!-- 特殊画像（固定位置） -->
       <img src="assets/images/to/TOOiS.png">
       <img src="assets/images/to/TOOiS.png">
       <img src="assets/images/to/TOWhite.png">
-      <!-- 通常方向幕（例：TO1〜TO3） -->
+      <!-- 通常幕（番号付き） -->
       <img src="assets/images/to/TO1.png">
       <img src="assets/images/to/TO2.png">
       <img src="assets/images/to/TO3.png">
@@ -57,10 +57,10 @@
   <script>
     const track = document.getElementById("track");
     const imageHeight = 529 + 10; // 画像高さ＋空白分
-    const totalImages = 7; // 合計7枚
+    const totalImages = 3; // 通常幕の枚数（TO1〜TO3）
     let scrollTimer = null;
-    let currentIndex = 1; // 現在位置（1始まり）
-    let offsetY = 0;      // 累積スクロール位置
+    let currentIndex = 1; // 現在位置（TO1からスタート）
+    let offsetY = 0;
 
     // 指定番号までスクロール
     function scrollTo(stopIndex) {
@@ -70,7 +70,7 @@
       let direction;
 
       if (stopIndex > currentIndex) {
-        // 老いている → 前方向(+移動)
+        // 老いている → 前方向
         distance = stopIndex - currentIndex;
         direction = -1;
       } else if (stopIndex < currentIndex) {
@@ -82,7 +82,7 @@
         }, distance * 30);
         return;
       } else {
-        return; // 同じ番号なら何もしない
+        return;
       }
 
       let steps = distance * imageHeight;
@@ -109,7 +109,7 @@
       let distance = stopIndex - 1;
       let steps = distance * imageHeight;
       let moved = 0;
-      let direction = +1; // 下方向
+      let direction = +1;
 
       scrollTimer = setInterval(() => {
         moved += Math.abs(direction * 10);
