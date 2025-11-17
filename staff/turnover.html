@@ -167,11 +167,11 @@
       }
     }
 
-    // 序数ラベル生成用
-    function ordinal(n) {
+    // 生成順序ラベル
+    function ordinalByIndex(i) {
       const suffixes = ["th","st","nd","rd"];
-      const v = n % 100;
-      return n + (suffixes[(v-20)%10] || suffixes[v] || suffixes[0]);
+      const v = i % 100;
+      return i + (suffixes[(v-20)%10] || suffixes[v] || suffixes[0]);
     }
 
     function generateButtons() {
@@ -179,9 +179,9 @@
       const numbers = input.split(",").map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
       const buttonsDiv = document.getElementById("buttons");
       buttonsDiv.innerHTML = "";
-      numbers.slice(0,4).forEach((m) => {
+      numbers.slice(0,4).forEach((m, idx) => {
         const btn = document.createElement("button");
-        btn.textContent = ordinal(m); // 序数ラベル
+        btn.textContent = ordinalByIndex(idx+1); // 生成順に1st,2nd,3rd...
         btn.onclick = () => scrollTo(m);
         buttonsDiv.appendChild(btn);
       });
