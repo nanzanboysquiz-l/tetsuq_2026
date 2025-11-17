@@ -2,14 +2,23 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 スクロール統合版（ズレ修正）</title>
+  <title>幕回し表示器</title>
   <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: url("assets/images/to/TO背景.png") no-repeat center center fixed;
+      background-size: cover;
+    }
     .container {
       width: 1134px;
       height: 529px;
       overflow: hidden;
       border: 2px solid #333;
       position: relative;
+      margin: 40px auto;
+      background: rgba(255,255,255,0.85); /* 背景透過で見やすく */
     }
     .track {
       display: flex;
@@ -19,19 +28,29 @@
     .track img {
       width: 1134px;
       height: 529px;
-      margin-bottom: 10px; /* 画像間に10px空白 */
+      margin-bottom: 10px; /* 画像間に空白 */
     }
     .buttons {
-      margin-top: 10px;
+      margin-top: 20px;
+      text-align: center;
     }
     .buttons button {
       margin: 5px;
       padding: 8px 16px;
+      font-size: 14px;
+      background: #0078d7;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .buttons button:hover {
+      background: #005a9e;
     }
   </style>
 </head>
 <body>
-  <h2>方向幕 スクロール統合版（ズレ修正）</h2>
   <div class="container">
     <div class="track" id="track">
       <!-- 特殊画像 -->
@@ -45,11 +64,6 @@
       <!-- 最後尾にホワイト -->
       <img src="assets/images/to/TOWhite.png">
     </div>
-  </div>
-
-  <div>
-    <label>停止番号リスト (最大4): <input type="text" id="stopList" value="3,2,1"></label>
-    <button onclick="generateButtons()">▶ ボタン生成</button>
   </div>
 
   <div class="buttons" id="buttons"></div>
@@ -94,33 +108,26 @@
         if (moved >= steps) {
           clearInterval(scrollTimer);
           scrollTimer = null;
-          currentIndex = newIndex; // ここで必ず更新
+          currentIndex = newIndex;
           if (callback) callback();
         }
       }, 16);
     }
 
-    // 順序ラベル生成
-    function ordinal(n) {
-      const suffixes = ["th","st","nd","rd"];
-      const v = n % 100;
-      return n + (suffixes[(v-20)%10] || suffixes[v] || suffixes[0]);
-    }
-
-    // ボタン生成
+    // ボタン生成（例: TO1〜TO3）
     function generateButtons() {
-      const input = document.getElementById("stopList").value;
-      const numbers = input.split(",").map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
       const buttonsDiv = document.getElementById("buttons");
       buttonsDiv.innerHTML = "";
-
-      numbers.slice(0,4).forEach((m, idx) => {
+      [1,2,3].forEach((m, idx) => {
         const btn = document.createElement("button");
-        btn.textContent = `${ordinal(idx+1)} → Stop at TO${m}`;
+        btn.textContent = `TO${m}へ`;
         btn.onclick = () => scrollTo(m);
         buttonsDiv.appendChild(btn);
       });
     }
+
+    // 初期化
+    generateButtons();
   </script>
 </body>
 </html>
