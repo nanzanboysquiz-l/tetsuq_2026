@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>方向幕 スクロール統合版（若番はk+1から逆移動）</title>
+  <title>方向幕 スクロール統合版（ズレ修正）</title>
   <style>
     .container {
       width: 1134px;
@@ -31,7 +31,7 @@
   </style>
 </head>
 <body>
-  <h2>方向幕 スクロール統合版（若番はk+1から逆移動）</h2>
+  <h2>方向幕 スクロール統合版（ズレ修正）</h2>
   <div class="container">
     <div class="track" id="track">
       <!-- 特殊画像 -->
@@ -57,12 +57,11 @@
   <script>
     const track = document.getElementById("track");
     const imageHeight = 529 + 10;
-    const totalImages = 7; // 配列全体
     let scrollTimer = null;
     let currentIndex = 1; // 初期位置は配列先頭
     let offsetY = 0;
 
-    // 指定番号 m → 内部位置 m+3
+    // 指定番号 m → 内部位置 index = m+3
     function scrollTo(m) {
       if (scrollTimer) clearInterval(scrollTimer);
 
@@ -76,8 +75,8 @@
         direction = -1;
         runScroll(distance, direction, targetIndex);
       } else if (targetIndex < currentIndex) {
-        // 若番 → 現在位置 k+1 まで進んでから逆方向
-        distance = 1; // k → k+1 の1枚分だけ進む
+        // 若番 → 現在位置 k+1 まで進む → 逆方向
+        distance = 1; // k → k+1 の1枚分
         direction = -1;
         runScroll(distance, direction, currentIndex + 1, () => {
           const backDistance = (currentIndex + 1) - targetIndex;
