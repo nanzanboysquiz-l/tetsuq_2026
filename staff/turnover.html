@@ -49,10 +49,10 @@
       width: 100%;
       height: auto;
       display: block;
-      margin-bottom: calc(100% * 10 / 529); /* 高さに対して相対的に余白を維持 */
+      /* 余白はJSで高さ比に基づきpx適用 */
     }
 
-    /* コントロールボタン */
+    /* コントロール */
     .controls {
       margin-top: 10px;
       text-align: center;
@@ -141,29 +141,51 @@
     let currentIndex = 1;
     let offsetY = 0;
 
+    // 高さ比に基づく余白(px)を各画像へ適用（10/529倍）
+    const MARGIN_RATIO = 10 / 529;
+    function updateImageMargins() {
+      const imgs = track.querySelectorAll("img");
+      imgs.forEach(img => {
+        const h = img.clientHeight;
+        const mb = h * MARGIN_RATIO;
+        img.style.marginBottom = mb + "px";
+      });
+    }
+
+    // スクロール1枚分の距離（画像高さ＋余白）を取得
+    function getStepHeight() {
+      const img = track.querySelector("img");
+      if (!img) return 539;
+      const h = img.clientHeight;
+      const mb = parseFloat(getComputedStyle(img).marginBottom) || 0;
+      return h + mb;
+    }
+
     // 幕回しスクロール
     function scrollTo(m) {
       if (scrollTimer) clearInterval(scrollTimer);
-      const img = track.querySelector("img");
-      const imageHeight = img ? img.clientHeight + (img.clientHeight * 10 / 529) : 539;
+      // 余白を最新に
+      updateImageMargins();
+      const step = getStepHeight();
       const targetIndex = m + 3;
       if (targetIndex > currentIndex) {
         const distance = targetIndex - currentIndex;
-        runScroll(distance, -1, targetIndex, imageHeight);
+        runScroll(distance, -1, targetIndex, step);
       } else if (targetIndex < currentIndex) {
-        runScroll(1, -1, currentIndex + 1, imageHeight, () => {
-          const backDistance = (currentIndex) - targetIndex;
-          runScroll(backDistance, +1, targetIndex, imageHeight);
+        runScroll(1, -1, currentIndex + 1, step, () => {
+          const backDistance = currentIndex - targetIndex;
+          runScroll(backDistance, +1, targetIndex, step);
         });
       }
     }
 
-    function runScroll(distance, direction, newIndex, imageHeight, callback) {
-      let steps = distance * imageHeight;
+    function runScroll(distance, direction, newIndex, stepHeight, callback) {
+      let steps = distance * stepHeight;
       let moved = 0;
       scrollTimer = setInterval(() => {
-        moved += Math.abs(direction * 10);
-        offsetY += direction * 10;
+        const delta = direction * 10; // 1フレーム移動量
+        moved += Math.abs(delta);
+        offsetY += delta;
         track.style.transform = `translateY(${offsetY}px)`;
         if (moved >= steps) {
           clearInterval(scrollTimer);
@@ -221,6 +243,13 @@
       drawNumber();
     }
     drawNumber();
+
+    // 初期ロード時とリサイズ時に余白を再計算
+    function refreshLayout() {
+      updateImageMargins();
+    }
+    window.addEventListener("load", refreshLayout);
+    window.addEventListener("resize", refreshLayout);
   </script>
 </body>
 </html>
