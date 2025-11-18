@@ -7,8 +7,6 @@
     @font-face {
       font-family: 'JF Dot Ayu Gothic 20';
       src: url('assets/fonts/JF-Dot-Ayu20.ttf') format('truetype');
-      font-weight: normal;
-      font-style: normal;
     }
 
     body {
@@ -26,26 +24,24 @@
     .main-wrapper {
       display: flex;
       gap: 20px;
-      flex-wrap: wrap; /* 狭い画面で縦並び */
+      flex-wrap: wrap;
       justify-content: center;
     }
 
-    /* 幕表示枠 */
     .container {
       width: 100%;
       max-width: 1134px;
-      aspect-ratio: 1134 / 529; /* アスペクト比維持 */
+      aspect-ratio: 1134 / 529;
       overflow: hidden;
       border: 2px solid #333;
       background: rgba(255,255,255,0.85);
       position: relative;
     }
 
-    /* 画像トラック：余白は gap で管理、JSで高さに応じて更新 */
     .track {
       display: flex;
       flex-direction: column;
-      gap: var(--gap, 0px);
+      gap: var(--gap, 0px); /* 余白はJSで高さ比に応じて更新 */
       transform: translateY(0);
       will-change: transform;
     }
@@ -55,7 +51,6 @@
       display: block;
     }
 
-    /* コントロール */
     .controls {
       margin-top: 10px;
       text-align: center;
@@ -83,7 +78,6 @@
       border-radius: 4px;
     }
 
-    /* 数字表示器 */
     .number-display {
       width: 250px;
       height: 250px;
@@ -91,7 +85,6 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      cursor: pointer;
     }
     .number-display span {
       font-family: 'JF Dot Ayu Gothic 20', monospace;
@@ -106,9 +99,7 @@
     <!-- 幕回し機構 -->
     <div>
       <div class="container">
-        <div class="track" id="track">
-          <!-- ここにJSで画像を追加 -->
-        </div>
+        <div class="track" id="track"></div>
       </div>
 
       <div class="controls">
@@ -124,20 +115,20 @@
       <div class="controls" id="buttons"></div>
     </div>
 
-    <!-- 数字表示器（クリックで+1、5の次は0） -->
-    <div class="number-display" onclick="increment()">
+    <!-- 数字表示器（クリック計数機能は削除済み） -->
+    <div class="number-display">
       <span id="numberValue">0</span>
     </div>
   </div>
 
   <script>
     const track = document.getElementById("track");
-    const MARGIN_RATIO = 10 / 529; // 画像高さに対する余白比
+    const MARGIN_RATIO = 10 / 529;
     let scrollTimer = null;
-    let currentIndex = 1; // 先頭インデックス（特殊画像込みで管理）
+    let currentIndex = 1;
     let offsetY = 0;
 
-    // 画像を動的追加：特殊3枚 + TO1〜TO22 + 末尾ホワイト
+    // 画像を追加：特殊3枚 + TO1〜TO22 + 末尾ホワイト
     function buildImages() {
       const specials = ["TOOiS.png", "TOOiS.png", "TOWhite.png"];
       specials.forEach(n => appendImg(`assets/images/to/${n}`));
@@ -150,7 +141,7 @@
       track.appendChild(img);
     }
 
-    // gap を画像高さに合わせて更新
+    // gap を高さ比で更新
     function updateGap() {
       const firstImg = track.querySelector("img");
       if (!firstImg) return;
@@ -159,27 +150,24 @@
       track.style.setProperty("--gap", `${gapPx}px`);
     }
 
-    // スクロール1枚分の距離を実測（隣接画像の top 差）
+    // スクロール距離を隣接画像の座標差で計算
     function getStepHeight() {
       const imgs = track.querySelectorAll("img");
-      if (imgs.length < 2) return 539; // フォールバック
+      if (imgs.length < 2) return 539;
       const r0 = imgs[0].getBoundingClientRect();
       const r1 = imgs[1].getBoundingClientRect();
-      return Math.abs(r1.top - r0.top); // 高さ＋gap を含む実測値
+      return Math.abs(r1.top - r0.top);
     }
 
-    // 幕回しスクロール
     function scrollTo(m) {
       if (scrollTimer) clearInterval(scrollTimer);
-      updateGap(); // 最新のギャップに更新
+      updateGap();
       const step = getStepHeight();
-      // 特殊3枚の後ろから m 番目へ
       const targetIndex = m + 3;
       if (targetIndex > currentIndex) {
         const distance = targetIndex - currentIndex;
         runScroll(distance, -1, targetIndex, step);
       } else if (targetIndex < currentIndex) {
-        // 一度1枚進めて段差を合わせてから戻る
         runScroll(1, -1, currentIndex + 1, step, () => {
           const backDistance = currentIndex - targetIndex;
           runScroll(backDistance, +1, targetIndex, step);
@@ -191,7 +179,7 @@
       let targetPixels = distance * stepHeight;
       let moved = 0;
       scrollTimer = setInterval(() => {
-        const delta = direction * 10; // 1フレームの移動量(px)
+        const delta = direction * 10;
         moved += Math.abs(delta);
         offsetY += delta;
         track.style.transform = `translateY(${offsetY}px)`;
@@ -213,7 +201,6 @@
       }
     }
 
-    // 生成順序ラベル
     function ordinalByIndex(i) {
       const suffixes = ["th","st","nd","rd"];
       const v = i % 100;
@@ -225,42 +212,30 @@
       const numbers = input.split(",").map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
       const buttonsDiv = document.getElementById("buttons");
       buttonsDiv.innerHTML = "";
-      numbers.slice(0, 22).forEach((m, idx) => {
+      numbers.slice(0,22).forEach((m, idx) => {
         const btn = document.createElement("button");
-        btn.textContent = ordinalByIndex(idx + 1); // 生成順に 1st, 2nd...
+        btn.textContent = ordinalByIndex(idx+1);
         btn.onclick = () => {
           scrollTo(m);
-          numberValue = idx + 1; // 数字表示更新
+          numberValue = idx+1; // ボタン順に数字表示を変更
           drawNumber();
         };
         buttonsDiv.appendChild(btn);
       });
     }
 
-    // 数字表示器
     let numberValue = 0;
     const numberSpan = document.getElementById("numberValue");
     function drawNumber() { numberSpan.textContent = numberValue; }
-    function increment() {
-      numberValue++;
-      if (numberValue > 5) numberValue = 0;
-      drawNumber();
-    }
 
-    // 初期化
     function init() {
       buildImages();
       drawNumber();
       generateButtons();
-      // レイアウト安定後に gap 計算
-      requestAnimationFrame(() => {
-        updateGap();
-      });
+      requestAnimationFrame(updateGap);
     }
     window.addEventListener("load", init);
-    window.addEventListener("resize", () => {
-      updateGap();
-    });
+    window.addEventListener("resize", updateGap);
   </script>
 </body>
 </html>
