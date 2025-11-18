@@ -115,7 +115,7 @@
       <div class="controls" id="buttons"></div>
     </div>
 
-    <!-- 数字表示器（クリック計数機能は削除済み） -->
+    <!-- 数字表示器 -->
     <div class="number-display">
       <span id="numberValue">0</span>
     </div>
@@ -213,7 +213,8 @@
     }
 
     function generateButtons() {
-      const input = document.getElementById("stopList").value;
+      const inputEl = document.getElementById("stopList");
+      const input = inputEl.value;
       const numbers = input.split(",").map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
       const buttonsDiv = document.getElementById("buttons");
       buttonsDiv.innerHTML = "";
@@ -227,6 +228,9 @@
         };
         buttonsDiv.appendChild(btn);
       });
+
+      // 🔑 入力欄を消去
+      inputEl.value = "";
     }
 
     let numberValue = 0;
