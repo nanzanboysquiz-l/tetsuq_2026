@@ -1,71 +1,99 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>車内LCD再現（固定版）</title>
-<style>
-body { background:#000; color:#fff; font-family:"Noto Sans JP",sans-serif; margin:0; }
-.topbar { background:#f60; color:#fff; font-size:1.5em; padding:8px; display:flex; justify-content:space-between; }
-.dest { font-weight:bold; }
-.clock { }
-.main { display:flex; }
-.map { width:55%; border-right:2px solid #222; padding:12px; }
-.next { width:45%; padding:12px; font-size:2em; }
-.station { display:inline-block; margin-right:12px; color:#999; }
-.station.stop { color:#fff; }
-.marker { display:inline-block; width:10px; height:10px; border-radius:50%; background:#0af; margin-right:6px; }
-.ticker { background:#222; padding:6px; font-size:1em; overflow:hidden; white-space:nowrap; }
-.ticker span { display:inline-block; animation:marquee 18s linear infinite; }
-@keyframes marquee { from{transform:translateX(100%)} to{transform:translateX(-100%)} }
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
+<meta name="author" content="" />
+<meta name="description" content="" />
+<meta name="keywords" content="" />
+<title>JR西日本 225系・321系WESTビジョンシミュレーター</title>
+
+<link rel="stylesheet" href="../../../style2.css" type="text/css">
+
+<style type="text/css">
+body{
+}
+.font_gothic{
+	font-family:'ＭＳ ゴシック', 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', sans-serif;
+}
+.font_gothic2{
+	font-family:'JF Dot jiskan16', 'ＭＳ ゴシック', 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', sans-serif;
+	-webkit-font-smoothing: none;
+	-moz-osx-font-smoothing: none;
+}
+.font_micho{
+	font-family:'ＭＳ 明朝', 'ヒラギノ明朝 Pro W3','Hiragino Mincho Pro';
+}
 </style>
+
+
+<script type="text/javascript" src="main.js" charset="UTF-8"></script> <!--javascript読み込み-->
+<script type="text/javascript" src="judgeOSBrowser.js" charset="UTF-8"></script> <!--javascript読み込み-->
+<script type="text/javascript" src="setting.js" charset="UTF-8"></script> <!--javascript読み込み-->
+<script type="text/javascript" src="utility.js" charset="UTF-8"></script> <!--javascript読み込み-->
+
+<script type="text/javascript">
+	judgeUA(); //OS・ユーザエージェントを判別
+</script>
+
 </head>
+
 <body>
 
-<div class="topbar">
-  <div class="dest">快速 高尾行き</div>
-  <div class="clock" id="clock"></div>
-</div>
+<a href="../../../index.htm">TOP</a> &gt; トレインビジョンシミュレーター &gt; JR西日本 225系・321系WESTビジョン
+<hr />
 
-<div class="main">
-  <div class="map" id="map"></div>
-  <div class="next" id="next"></div>
-</div>
 
-<div class="ticker"><span>ご乗車ありがとうございます / Thank you for riding</span></div>
+<!--
+　英語 <input id='intervalInput1' type='text' value='5.0' size='4' style='text-align:right; ' onkeyup='intervalTimeSet()' /> 秒
+　韓国語 <input id='intervalInput2' type='text' value='5.0' size='4' style='text-align:right; ' onkeyup='intervalTimeSet()' /> 秒
+<!--
+　/
+　[表示点滅] <input id='switchIntervalInput0' type='text' value='1.0' size='4' style='text-align:right; ' onkeyup='intervalTimeSet()' /> 秒
+　-->
+<!--入力部-->
+<div id='inputFormDiv' style=""></div>
+<hr />
 
-<script>
-const stations = ["東京","神田","御茶ノ水","四ツ谷","新宿","中野"];
-const cursor = 2; // 現在位置を固定（例: 御茶ノ水）
+<div id="log"></div>
 
-function renderMap(){
-  const map = document.getElementById("map");
-  map.innerHTML = stations.map((st,i)=>`
-    <span class="station ${i>=cursor?'stop':'pass'}">
-      <span class="marker" style="opacity:${i===cursor?1:0.2}"></span>${st}
-    </span>`).join('');
-}
 
-function renderNext(){
-  const st = stations[cursor+1] || stations[cursor];
-  const next = document.getElementById("next");
-  next.textContent = lang==="jp" ? `次は ${st}` : `Next station: ${st}`;
-}
+<input type="button" id="mainButton0" value="表示更新" onclick="readForm(); updateLED(); " />　
+<input type="button" id="mainButton1" value="サンプル設定" onclick="randomSetFlag = true;  setUnitLine()" />　
+<input type="button" id="mainButton1" value="ランダム設定" onclick="randomSetFlag = false;  setUnitLine()" />
+　/　
+切替間隔 <input id='intervalInput0' type='text' value='4.0' size='4' style='text-align:right; ' onkeyup='intervalTimeSet()' /> 秒
+　/　
+<select size='1' id='directionInput' style='' onChange='readForm(); updateLED(); adjustSize(); '>
+<option value=''>右向き</option>
+<option value=''>左向き</option>
+</select> 
+　/　
+<br />
+<input type="button" id="mainButton2" value="　>>> 縮小 <<<　" onclick="zoom/=1.1; adjustSize(); updateLED(); updateStatusAll(); remarksUpdate(); " />　
+<input type="button" id="mainButton3" value="　<<< 拡大 >>>　" onclick="zoom*=1.1; adjustSize(); updateLED(); updateStatusAll(); remarksUpdate(); " />
+　/　
+<input type="button" id="" value="　前の駅へ　" onclick="updateStatus(-3);" />　
+<input type="button" id="" value="　前の状態へ　" onclick="updateStatus(-1);" />　
+<input type="button" id="" value="　次の状態へ　" onclick="updateStatus(1); " />　
+<input type="button" id="" value="　次の駅へ　" onclick="updateStatus(3); " />　
+　<!--
+　/
+　スクロール速度
+　<input type="button" id="mainButton6" value="おそく" onclick="scrollamountAdjust-=10; updateStatusAll(); remarksUpdate(); " style="" />
+　<input type="button" id="mainButton7" value="はやく" onclick="scrollamountAdjust+=10; updateStatusAll(); remarksUpdate(); " style="" />
+　-->
+<br />
+<br />
+<!--発車標描画部-->
+<div id="displayMainDiv" style='' ></div>
+<hr />
 
-function renderClock(){
-  const d = new Date();
-  document.getElementById("clock").textContent = d.toLocaleTimeString('ja-JP',{hour12:false});
-}
 
-let lang="jp";
-function cycle(){
-  renderNext();
-  setTimeout(()=>{ lang="en"; renderNext(); },15000);
-  setTimeout(()=>{ lang="jp"; },20000);
-}
 
-renderMap(); renderNext(); renderClock();
-setInterval(renderClock,1000);
-setInterval(cycle,20000);
-</script>
+
+
+<script type="text/javascript"> main(); </script>
 </body>
 </html>
