@@ -2,52 +2,70 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>近鉄風LCD再現</title>
+<title>車内LCD再現（固定版）</title>
 <style>
 body { background:#000; color:#fff; font-family:"Noto Sans JP",sans-serif; margin:0; }
-.topbar { background:#b00030; color:#fff; font-size:2em; padding:8px; text-align:center; }
+.topbar { background:#f60; color:#fff; font-size:1.5em; padding:8px; display:flex; justify-content:space-between; }
 .dest { font-weight:bold; }
-.main { text-align:center; margin-top:20px; }
-.next { font-size:3em; margin-bottom:20px; }
-.map { font-size:1.2em; color:#ccc; }
+.clock { }
+.main { display:flex; }
+.map { width:55%; border-right:2px solid #222; padding:12px; }
+.next { width:45%; padding:12px; font-size:2em; }
+.station { display:inline-block; margin-right:12px; color:#999; }
+.station.stop { color:#fff; }
+.marker { display:inline-block; width:10px; height:10px; border-radius:50%; background:#0af; margin-right:6px; }
 .ticker { background:#222; padding:6px; font-size:1em; overflow:hidden; white-space:nowrap; }
+.ticker span { display:inline-block; animation:marquee 18s linear infinite; }
+@keyframes marquee { from{transform:translateX(100%)} to{transform:translateX(-100%)} }
 </style>
 </head>
 <body>
-  <div class="topbar">
-    <span class="dest">大阪難波行き</span>
-  </div>
 
-  <div class="main">
-    <div class="next" id="next">次は 鶴橋</div>
-    <div class="map">
-      大阪上本町 ― 鶴橋 ― 今里 ― 布施 ― 河内永和 ― 河内小阪 ― 八戸ノ里
-    </div>
-  </div>
+<div class="topbar">
+  <div class="dest">快速 高尾行き</div>
+  <div class="clock" id="clock"></div>
+</div>
 
-  <div class="ticker">ご乗車ありがとうございます / Thank you for riding</div>
+<div class="main">
+  <div class="map" id="map"></div>
+  <div class="next" id="next"></div>
+</div>
+
+<div class="ticker"><span>ご乗車ありがとうございます / Thank you for riding</span></div>
 
 <script>
-const stations = [
-  "大阪上本町","鶴橋","今里","布施","河内永和","河内小阪","八戸ノ里"
-];
-let cursor = 1; // 現在位置（次は stations[1]）
+const stations = ["東京","神田","御茶ノ水","四ツ谷","新宿","中野"];
+const cursor = 2; // 現在位置を固定（例: 御茶ノ水）
 
-const jpText = () => `次は ${stations[cursor]}`;
-const enText = () => `Next station: ${stations[cursor]}`;
-const nextEl = document.getElementById("next");
-
-function cycle() {
-  nextEl.textContent = jpText();
-  setTimeout(()=>{ nextEl.textContent = enText(); }, 15000);
+function renderMap(){
+  const map = document.getElementById("map");
+  map.innerHTML = stations.map((st,i)=>`
+    <span class="station ${i>=cursor?'stop':'pass'}">
+      <span class="marker" style="opacity:${i===cursor?1:0.2}"></span>${st}
+    </span>`).join('');
 }
-cycle();
-setInterval(cycle, 20000); // 15s JP + 5s EN
 
-// 仮想進行（駅を固定配列で順番に進める）
-setInterval(()=>{
-  cursor = (cursor+1) % stations.length;
-}, 20000);
+function renderNext(){
+  const st = stations[cursor+1] || stations[cursor];
+  const next = document.getElementById("next");
+  next.textContent = lang==="jp" ? `次は ${st}` : `Next station: ${st}`;
+}
+
+function renderClock(){
+  const d = new Date();
+  document.getElementById("clock").textContent = d.toLocaleTimeString('ja-JP',{hour12:false});
+}
+
+let lang="jp";
+function cycle(){
+  renderNext();
+  setTimeout(()=>{ lang="en"; renderNext(); },15000);
+  setTimeout(()=>{ lang="jp"; },20000);
+}
+
+renderMap(); renderNext(); renderClock();
+setInterval(renderClock,1000);
+setInterval(cycle,20000);
 </script>
 </body>
 </html>
