@@ -46,38 +46,38 @@ function writeUnitHTML()
 	out += "";
 	
 	out += "        <img id='baseImg' src='img/base.png' alt='' style='position:absolute; ' />";
-	out += "        <img id='carNumBaseImg' src='img/null.png' alt='' style='position:absolute; ' />";
-	out += "        <img id='topMainBaseImg' src='img/null.png' alt='' style='position:absolute; ' />";
-	out += "        <img id='topMainImg' src='img/null.png' alt='' style='position:absolute; ' />";
-	out += "        <img id='topStaNumBaseImg' src='img/null.png' alt='' style='position:absolute; ' />";
-	out += "        <img id='topStaNum1Img' src='img/null.png' alt='' style='position:absolute; ' />";
-	out += "        <img id='topStaNum0Img' src='img/null.png' alt='' style='position:absolute; ' />";
+	out += "        <img id='carNumBaseImg' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
+	out += "        <img id='topMainBaseImg' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
+	out += "        <img id='topMainImg' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
+	out += "        <img id='topStaNumBaseImg' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
+	out += "        <img id='topStaNum1Img' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
+	out += "        <img id='topStaNum0Img' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
 	out += "        <img id='bottomMessageImg' src='img/other/last-thanks.png' alt='' style='position:absolute; z-index:2; ' />";
 	
 	//時刻以[28]?
 	for(c=0 ; c<contentsList.length ; c++)
 	{
-		out += "  <img id='"+contentsList[c][0] + "Img' style='position:absolute; ' src='img/null.png' alt='' />";
+		out += "  <img id='"+contentsList[c][0] + "Img' style='position:absolute; ' src='assets/images/vision/null.png' alt='' />";
 	}
 	//横[29]?
 	for(i=0 ; i<mapStaNum+1 ; i++)
 	{
-		out += "        <img id='mapLineImg"+i+"' src='img/null.png' alt='' style='position:absolute; z-index:2; ' />";
+		out += "        <img id='mapLineImg"+i+"' src='assets/images/vision/null.png' alt='' style='position:absolute; z-index:2; ' />";
 	}
 	//-------------路線図
 	for(i=0 ; i<mapStaNum ; i++)
 	{
 		out += "<div id='mapStaDiv"+i+"' style='position:absolute; '>";
 		//[30]?[31]
-		out += "        <img id='mapStaNameImg"+i+"' src='img/null.png' alt='' style='position:absolute; ' />";
+		out += "        <img id='mapStaNameImg"+i+"' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
 		//[32]?[33]号
-		out += "        <img id='mapStaNumBaseImg"+i+"' src='img/null.png' alt='' style='position:absolute; ' />";
-		out += "        <img id='mapStaNum1Img"+i+"' src='img/null.png' alt='' style='position:absolute; ' />";
-		out += "        <img id='mapStaNum0Img"+i+"' src='img/null.png' alt='' style='position:absolute; ' />";
+		out += "        <img id='mapStaNumBaseImg"+i+"' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
+		out += "        <img id='mapStaNum1Img"+i+"' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
+		out += "        <img id='mapStaNum0Img"+i+"' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
 		//[34]??丸印
-		out += "        <img id='mapCircleImg"+i+"' src='img/null.png' alt='' style='position:absolute; ' />";
+		out += "        <img id='mapCircleImg"+i+"' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
 		//乗換表示
-		out += "        <img id='mapTranceferImg"+i+"' src='img/null.png' alt='' style='position:absolute; ' />";
+		out += "        <img id='mapTranceferImg"+i+"' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
 		//乗換の縦[35]?
 		out += "        <div id='mapTranceferLineADiv"+i+"' style='position:absolute; background-color:#000; z-index:1; '></div>";
 		out += "        <div id='mapTranceferLineBDiv"+i+"' style='position:absolute; background-color:#000; z-index:1; '></div>";
@@ -86,7 +86,7 @@ function writeUnitHTML()
 	//[36]?間の走行中矢印[37]?[38]過のハイフン
 	for(i=0 ; i<mapStaNum-1 ; i++)
 	{
-		out += "        <img id='mapSpanImg"+i+"' src='img/null.png' alt='' style='position:absolute; ' />";
+		out += "        <img id='mapSpanImg"+i+"' src='assets/images/vision/null.png' alt='' style='position:absolute; ' />";
 	}
 	out += "</div>";
 	
@@ -338,7 +338,7 @@ function readStaList()
 		else
 			var nextStopFlag = true;
 		
-		//存在する[178]?[179]かチェ[180]?[181]する
+		//存在する[178]?[179]かチェックする
 		var staNumBuff = "";
 		for(j=0 ; j<staNumList.length ; j++)
 		{
@@ -693,9 +693,9 @@ function updateLED()
 		if(dispStaSymbol == "W")
 		{
 			var id = "topStaNum1Img";
-			document.getElementById(id).src = "img/null.png";
+			document.getElementById(id).src = "assets/images/vision/null.png";
 			var id = "topStaNum0Img";
-			document.getElementById(id).src = "img/null.png";
+			document.getElementById(id).src = "assets/images/vision/null.png";
 		}
 		else
 		{
@@ -711,12 +711,12 @@ function updateLED()
 		//[398]?[399]号なし[400]?[401]?[402]また[403]?行[404]?拡大表示中の場合[405]?表示しな[406]?
 		//[407]?[408]号ベ[409]?ス
 		var id = "topStaNumBaseImg";
-		document.getElementById(id).src = "img/null.png";
+		document.getElementById(id).src = "assets/images/vision/null.png";
 		//[410]?[411]号
 		var id = "topStaNum1Img";
-		document.getElementById(id).src = "img/null.png";
+		document.getElementById(id).src = "assets/images/vision/null.png";
 		var id = "topStaNum0Img";
-		document.getElementById(id).src = "img/null.png";
+		document.getElementById(id).src = "assets/images/vision/null.png";
 	}
 	
 	
@@ -796,11 +796,11 @@ function updateLED()
 		{
 			//[496]?[497]号なし[498]?[499]?[500]は[501]?[502]号を表示しな[503]?
 			var id = "mapStaNumBaseImg"+i;
-			document.getElementById(id).src = "img/null.png";
+			document.getElementById(id).src = "assets/images/vision/null.png";
 			var id = "mapStaNum1Img"+i;
-			document.getElementById(id).src = "img/null.png";
+			document.getElementById(id).src = "assets/images/vision/null.png";
 			var id = "mapStaNum0Img"+i;
-			document.getElementById(id).src = "img/null.png";
+			document.getElementById(id).src = "assets/images/vision/null.png";
 		}
 		
 		//[504]??丸印
@@ -836,7 +836,7 @@ function updateLED()
 			else if(!stopStaList[mapStart+i][1] && mapStart+i >= nowSta)
 				var src = "img/map/span-pass.png";
 			else
-				var src = "img/null.png";
+				var src = "assets/images/vision/null.png";
 			
 			var id = "mapSpanImg"+i;
 			document.getElementById(id).src = src;
@@ -855,7 +855,7 @@ function updateLED()
 		{
 			//起点に達して[530]?    ??[531]合、また[532]?通り過ぎた[533]?[534]合[535]?    ?
 			var zIndex = -1;
-			var src = "img/null.png";
+			var src = "assets/images/vision/null.png";
 		}
 		else if(getTrancefarFlag(stopStaList[mapStart+i][0]))
 		{
@@ -866,7 +866,7 @@ function updateLED()
 		else
 		{
 			var zIndex = -1;
-			var src = "img/null.png";
+			var src = "assets/images/vision/null.png";
 		}
 		var id = "mapTranceferLineADiv"+i;
 		document.getElementById(id).style.zIndex = zIndex;
@@ -941,7 +941,7 @@ function updateLED()
 	if(stopStaList.length - 1 == nowSta)
 		var src = "img/other/last-thanks.png";
 	else
-		var src = "img/null.png";
+		var src = "assets/images/vision/null.png";
 	var id = "bottomMessageImg";
 	document.getElementById(id).src = src;
 
