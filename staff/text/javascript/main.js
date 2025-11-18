@@ -604,11 +604,11 @@ function updateLED()
 		
 		//行[351]?拡大表示中の場合、行[352]?は表示しな[353]?
 		if(bigDestinationFlag && contentsList[c][0] == "destination")
-			var src = "img/null.png";
+			var src = "assets/images/vision/null.png";
 		
 		//次の[354]?[355]終着[356]??場合、号車番号以外[357]?表示しな[358]?
 		if(nextFinal && contentsList[c][0] != "carNo")
-			var src = "img/null.png";
+			var src = "assets/images/vision/null.png";
 		
 		var id = contentsList[c][0] + "Img";
 		document.getElementById(id).src = src;
