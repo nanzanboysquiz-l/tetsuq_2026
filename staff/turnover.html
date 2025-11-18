@@ -187,6 +187,11 @@
           clearInterval(scrollTimer);
           scrollTimer = null;
           currentIndex = newIndex;
+
+          // 🔑 ズレ補正：最終位置を強制的に正しい座標に合わせる
+          offsetY = -stepHeight * (newIndex - 1);
+          track.style.transform = `translateY(${offsetY}px)`;
+
           if (callback) callback();
         }
       }, 16);
@@ -217,7 +222,7 @@
         btn.textContent = ordinalByIndex(idx+1);
         btn.onclick = () => {
           scrollTo(m);
-          numberValue = idx+1; // ボタン順に数字表示を変更
+          numberValue = idx+1;
           drawNumber();
         };
         buttonsDiv.appendChild(btn);
