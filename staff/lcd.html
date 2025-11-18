@@ -1,155 +1,53 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>駅案内表示</title>
-  <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-      background: #000;
-      color: #fff;
-      margin: 0;
-      padding: 20px;
-    }
-
-    .header {
-      font-size: 24px;
-      margin-bottom: 10px;
-      font-weight: bold;
-    }
-
-    .stations {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding: 10px;
-      background: #111;
-      border: 2px solid #444;
-      border-radius: 8px;
-    }
-
-    .station {
-      background: #222;
-      border-radius: 6px;
-      padding: 8px 12px;
-      text-align: center;
-      min-width: 100px;
-      transition: background 0.3s;
-    }
-
-    .station .code {
-      font-size: 13px;
-      color: #aaa;
-    }
-
-    .station .name {
-      font-size: 16px;
-      margin-top: 4px;
-    }
-
-    .station.current {
-      background: #ffcc00;
-      color: #000;
-      font-weight: bold;
-    }
-
-    .controls {
-      margin-top: 20px;
-      color: #ccc;
-      font-size: 14px;
-    }
-
-    .controls input, .controls select {
-      margin: 5px;
-      padding: 6px 10px;
-      font-size: 14px;
-    }
-
-    .connections {
-      margin-top: 15px;
-      font-size: 14px;
-      color: #ccc;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>近鉄風LCD再現</title>
+<style>
+body { background:#000; color:#fff; font-family:"Noto Sans JP",sans-serif; margin:0; }
+.topbar { background:#b00030; color:#fff; font-size:2em; padding:8px; text-align:center; }
+.dest { font-weight:bold; }
+.main { text-align:center; margin-top:20px; }
+.next { font-size:3em; margin-bottom:20px; }
+.map { font-size:1.2em; color:#ccc; }
+.ticker { background:#222; padding:6px; font-size:1em; overflow:hidden; white-space:nowrap; }
+</style>
 </head>
 <body>
-  <div class="header" id="trainInfo">急行 奈良行き</div>
-
-  <div class="stations" id="stationList"></div>
-
-  <div class="connections" id="connections">接続路線：JR線・大阪線・地下鉄</div>
-
-  <div class="controls">
-    <label>現在地を選択：
-      <select id="stationSelect"></select>
-    </label>
-    <button onclick="updateCurrentStation()">更新</button>
-    <br>
-    <label>行先：
-      <input type="text" id="destinationInput" value="奈良">
-    </label>
-    <label>種別：
-      <select id="typeSelect">
-        <option value="急行">急行</option>
-        <option value="準急">準急</option>
-        <option value="普通">普通</option>
-      </select>
-    </label>
-    <button onclick="updateHeader()">行先更新</button>
+  <div class="topbar">
+    <span class="dest">大阪難波行き</span>
   </div>
 
-  <script>
-    const stations = [
-      { code: "A08", name: "河内小阪" },
-      { code: "A07", name: "河内永和" },
-      { code: "A06", name: "布施" },
-      { code: "A05", name: "今里" },
-      { code: "A04", name: "鶴橋" },
-      { code: "A03", name: "大阪上本町" },
-      { code: "A02", name: "日本橋" },
-      { code: "A01", name: "大阪難波" }
-    ];
+  <div class="main">
+    <div class="next" id="next">次は 鶴橋</div>
+    <div class="map">
+      大阪上本町 ― 鶴橋 ― 今里 ― 布施 ― 河内永和 ― 河内小阪 ― 八戸ノ里
+    </div>
+  </div>
 
-    let currentCode = "A02"; // 初期現在地
+  <div class="ticker">ご乗車ありがとうございます / Thank you for riding</div>
 
-    function renderStations() {
-      const container = document.getElementById("stationList");
-      container.innerHTML = "";
-      stations.forEach(st => {
-        const div = document.createElement("div");
-        div.className = "station" + (st.code === currentCode ? " current" : "");
-        div.innerHTML = `<div class="code">${st.code}</div><div class="name">${st.name}</div>`;
-        container.appendChild(div);
-      });
-    }
+<script>
+const stations = [
+  "大阪上本町","鶴橋","今里","布施","河内永和","河内小阪","八戸ノ里"
+];
+let cursor = 1; // 現在位置（次は stations[1]）
 
-    function populateSelect() {
-      const select = document.getElementById("stationSelect");
-      select.innerHTML = "";
-      stations.forEach(st => {
-        const opt = document.createElement("option");
-        opt.value = st.code;
-        opt.textContent = `${st.name} (${st.code})`;
-        if (st.code === currentCode) opt.selected = true;
-        select.appendChild(opt);
-      });
-    }
+const jpText = () => `次は ${stations[cursor]}`;
+const enText = () => `Next station: ${stations[cursor]}`;
+const nextEl = document.getElementById("next");
 
-    function updateCurrentStation() {
-      const select = document.getElementById("stationSelect");
-      currentCode = select.value;
-      renderStations();
-    }
+function cycle() {
+  nextEl.textContent = jpText();
+  setTimeout(()=>{ nextEl.textContent = enText(); }, 15000);
+}
+cycle();
+setInterval(cycle, 20000); // 15s JP + 5s EN
 
-    function updateHeader() {
-      const dest = document.getElementById("destinationInput").value.trim();
-      const type = document.getElementById("typeSelect").value;
-      const header = document.getElementById("trainInfo");
-      header.textContent = `${type} ${dest}行き`;
-    }
-
-    renderStations();
-    populateSelect();
-  </script>
+// 仮想進行（駅を固定配列で順番に進める）
+setInterval(()=>{
+  cursor = (cursor+1) % stations.length;
+}, 20000);
+</script>
 </body>
 </html>
