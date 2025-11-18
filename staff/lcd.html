@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>駅案内表示</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #000;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .header {
+      font-size: 24px;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .stations {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 10px;
+      background: #111;
+      border: 2px solid #444;
+      border-radius: 8px;
+    }
+
+    .station {
+      background: #222;
+      border-radius: 6px;
+      padding: 8px 12px;
+      text-align: center;
+      min-width: 100px;
+      transition: background 0.3s;
+    }
+
+    .station .code {
+      font-size: 13px;
+      color: #aaa;
+    }
+
+    .station .name {
+      font-size: 16px;
+      margin-top: 4px;
+    }
+
+    .station.current {
+      background: #ffcc00;
+      color: #000;
+      font-weight: bold;
+    }
+
+    .controls {
+      margin-top: 20px;
+      color: #ccc;
+      font-size: 14px;
+    }
+
+    .controls input, .controls select {
+      margin: 5px;
+      padding: 6px 10px;
+      font-size: 14px;
+    }
+
+    .connections {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div class="header" id="trainInfo">急行 奈良行き</div>
+
+  <div class="stations" id="stationList"></div>
+
+  <div class="connections" id="connections">接続路線：JR線・大阪線・地下鉄</div>
+
+  <div class="controls">
+    <label>現在地を選択：
+      <select id="stationSelect"></select>
+    </label>
+    <button onclick="updateCurrentStation()">更新</button>
+    <br>
+    <label>行先：
+      <input type="text" id="destinationInput" value="奈良">
+    </label>
+    <label>種別：
+      <select id="typeSelect">
+        <option value="急行">急行</option>
+        <option value="準急">準急</option>
+        <option value="普通">普通</option>
+      </select>
+    </label>
+    <button onclick="updateHeader()">行先更新</button>
+  </div>
+
+  <script>
+    const stations = [
+      { code: "A08", name: "河内小阪" },
+      { code: "A07", name: "河内永和" },
+      { code: "A06", name: "布施" },
+      { code: "A05", name: "今里" },
+      { code: "A04", name: "鶴橋" },
+      { code: "A03", name: "大阪上本町" },
+      { code: "A02", name: "日本橋" },
+      { code: "A01", name: "大阪難波" }
+    ];
+
+    let currentCode = "A02"; // 初期現在地
+
+    function renderStations() {
+      const container = document.getElementById("stationList");
+      container.innerHTML = "";
+      stations.forEach(st => {
+        const div = document.createElement("div");
+        div.className = "station" + (st.code === currentCode ? " current" : "");
+        div.innerHTML = `<div class="code">${st.code}</div><div class="name">${st.name}</div>`;
+        container.appendChild(div);
+      });
+    }
+
+    function populateSelect() {
+      const select = document.getElementById("stationSelect");
+      select.innerHTML = "";
+      stations.forEach(st => {
+        const opt = document.createElement("option");
+        opt.value = st.code;
+        opt.textContent = `${st.name} (${st.code})`;
+        if (st.code === currentCode) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function updateCurrentStation() {
+      const select = document.getElementById("stationSelect");
+      currentCode = select.value;
+      renderStations();
+    }
+
+    function updateHeader() {
+      const dest = document.getElementById("destinationInput").value.trim();
+      const type = document.getElementById("typeSelect").value;
+      const header = document.getElementById("trainInfo");
+      header.textContent = `${type} ${dest}行き`;
+    }
+
+    renderStations();
+    populateSelect();
+  </script>
+</body>
+</html>
