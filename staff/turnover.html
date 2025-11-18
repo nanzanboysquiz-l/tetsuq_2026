@@ -26,15 +26,14 @@
     .main-wrapper {
       display: flex;
       gap: 20px;
-      flex-wrap: wrap; /* 画面が狭い場合は縦並び */
+      flex-wrap: wrap;
       justify-content: center;
     }
 
-    /* 幕表示枠 */
     .container {
       width: 100%;
       max-width: 1134px;
-      aspect-ratio: 1134 / 529; /* アスペクト比維持 */
+      aspect-ratio: 1134 / 529;
       overflow: hidden;
       border: 2px solid #333;
       background: rgba(255,255,255,0.85);
@@ -49,10 +48,9 @@
       width: 100%;
       height: auto;
       display: block;
-      /* 余白はJSで高さ比に基づきpx適用 */
+      margin-bottom: calc(100% * 10 / 529); /* 高さ比で余白維持 */
     }
 
-    /* コントロール */
     .controls {
       margin-top: 10px;
       text-align: center;
@@ -80,7 +78,6 @@
       border-radius: 4px;
     }
 
-    /* 数字表示器 */
     .number-display {
       width: 250px;
       height: 250px;
@@ -107,29 +104,31 @@
           <img src="assets/images/to/TOOiS.png">
           <img src="assets/images/to/TOOiS.png">
           <img src="assets/images/to/TOWhite.png">
-          <!-- 通常幕 -->
-          <img src="assets/images/to/TO1.png">
-          <img src="assets/images/to/TO2.png">
-          <img src="assets/images/to/TO3.png">
+          <!-- 通常幕 (TO1〜TO22) -->
+          <script>
+            for (let i = 1; i <= 22; i++) {
+              document.write(`<img src="assets/images/to/TO${i}.png">`);
+            }
+          </script>
           <!-- 最後尾にホワイト -->
           <img src="assets/images/to/TOWhite.png">
         </div>
       </div>
 
       <div class="controls">
-        <label>停止番号リスト (最大4): 
+        <label>停止番号リスト (最大22): 
           <input type="text" id="stopList" value="3,2,1">
         </label>
         <button onclick="generateButtons()">▶ ボタン生成</button>
         <br>
-        <input type="number" id="manualInput" min="1" max="3" placeholder="番号入力">
+        <input type="number" id="manualInput" min="1" max="22" placeholder="番号入力">
         <button onclick="manualScroll()">移動</button>
       </div>
 
       <div class="controls" id="buttons"></div>
     </div>
 
-    <!-- 数字表示器（クリックで+1、5の次は0） -->
+    <!-- 数字表示器 -->
     <div class="number-display" onclick="increment()">
       <span id="numberValue">0</span>
     </div>
@@ -141,31 +140,16 @@
     let currentIndex = 1;
     let offsetY = 0;
 
-    // 高さ比に基づく余白(px)を各画像へ適用（10/529倍）
     const MARGIN_RATIO = 10 / 529;
-    function updateImageMargins() {
-      const imgs = track.querySelectorAll("img");
-      imgs.forEach(img => {
-        const h = img.clientHeight;
-        const mb = h * MARGIN_RATIO;
-        img.style.marginBottom = mb + "px";
-      });
-    }
-
-    // スクロール1枚分の距離（画像高さ＋余白）を取得
     function getStepHeight() {
       const img = track.querySelector("img");
       if (!img) return 539;
       const h = img.clientHeight;
-      const mb = parseFloat(getComputedStyle(img).marginBottom) || 0;
-      return h + mb;
+      return h * (1 + MARGIN_RATIO);
     }
 
-    // 幕回しスクロール
     function scrollTo(m) {
       if (scrollTimer) clearInterval(scrollTimer);
-      // 余白を最新に
-      updateImageMargins();
       const step = getStepHeight();
       const targetIndex = m + 3;
       if (targetIndex > currentIndex) {
@@ -183,7 +167,7 @@
       let steps = distance * stepHeight;
       let moved = 0;
       scrollTimer = setInterval(() => {
-        const delta = direction * 10; // 1フレーム移動量
+        const delta = direction * 10;
         moved += Math.abs(delta);
         offsetY += delta;
         track.style.transform = `translateY(${offsetY}px)`;
@@ -198,14 +182,13 @@
 
     function manualScroll() {
       const m = parseInt(document.getElementById("manualInput").value, 10);
-      if (!isNaN(m) && m >= 1 && m <= 3) {
+      if (!isNaN(m) && m >= 1 && m <= 22) {
         scrollTo(m);
       } else {
-        alert("1〜3の番号を入力してください");
+        alert("1〜22の番号を入力してください");
       }
     }
 
-    // 生成順序ラベル
     function ordinalByIndex(i) {
       const suffixes = ["th","st","nd","rd"];
       const v = i % 100;
@@ -217,12 +200,12 @@
       const numbers = input.split(",").map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
       const buttonsDiv = document.getElementById("buttons");
       buttonsDiv.innerHTML = "";
-      numbers.slice(0,4).forEach((m, idx) => {
+      numbers.slice(0,22).forEach((m, idx) => {
         const btn = document.createElement("button");
-        btn.textContent = ordinalByIndex(idx+1); // 生成順に1st,2nd,3rd...
+        btn.textContent = ordinalByIndex(idx+1);
         btn.onclick = () => {
           scrollTo(m);
-          numberValue = idx+1; // ボタン順に数字表示を変更
+          numberValue = idx+1;
           drawNumber();
         };
         buttonsDiv.appendChild(btn);
@@ -230,7 +213,6 @@
     }
     generateButtons();
 
-    // 数字表示器
     let numberValue = 0;
     const numberSpan = document.getElementById("numberValue");
 
@@ -243,13 +225,6 @@
       drawNumber();
     }
     drawNumber();
-
-    // 初期ロード時とリサイズ時に余白を再計算
-    function refreshLayout() {
-      updateImageMargins();
-    }
-    window.addEventListener("load", refreshLayout);
-    window.addEventListener("resize", refreshLayout);
   </script>
 </body>
 </html>
