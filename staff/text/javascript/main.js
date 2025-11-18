@@ -596,7 +596,7 @@ function updateLED()
 		
 		//路線記号は[345]?-cycle」つけな[346]?[347]路線記号以外[348]?つける
 		if(contentsList[c][0] == "lineSymbol" || contentsList[c][0] == "carNo")
-			var src = "img/" + listData[index][1] + ".png";
+			var src = "assets/images/vision/symbol/" + listData[index][1] + ".png";
 		else if(contentsList[c][0] == "type" || contentsList[c][0] == "destination") //種別と行き先[349]?ひらがなな[350]?
 			var src = "img/" + listData[index][1] + "-" + nonHira[cycle] + ".png";
 		else
