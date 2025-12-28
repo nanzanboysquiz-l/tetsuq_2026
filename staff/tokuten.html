@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v12</title>
+  <title>Score Proto v13</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -72,28 +72,30 @@
       transition: width 0.3s;
     }
 
-    /* 節（5問ごと） */
+    /* 節（5問ごと）を太く */
     .gaugeTick {
       position: absolute;
-      top: 0;
-      width: 2px;
-      height: 20px;
-      background: #555;
+      top: -4px;
+      width: 4px;
+      height: 28px;
+      background: #333;
+      border-radius: 2px;
     }
 
     /* 画像（ゲージ上を移動） */
     #gaugeIcon {
       position: absolute;
-      top: -40px; /* ゲージの上に配置 */
-      width: 40px;
+      top: -110px; /* 画像高さ98px + 余白12px */
+      width: 98px;
       height: auto;
       transition: transform 0.3s;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
 
-<h2>Score Proto v12</h2>
+<h2>Score Proto v13</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
 
@@ -201,22 +203,27 @@
       const tick = document.createElement("div");
       tick.className = "gaugeTick";
       const ratio = i / maxProblems;
-      tick.style.left = `calc(${ratio * 100}% - 1px)`;
+      tick.style.left = `calc(${ratio * 100}% - 2px)`;
       container.appendChild(tick);
     }
   }
 
-  /* ゲージ更新 + 画像移動 */
+  /* ゲージ更新 + 画像移動（右端合わせ） */
   function updateGauge() {
     if (!maxProblems) return;
 
     const ratio = Math.min(problemCount / maxProblems, 1);
-    document.getElementById("gaugeBar").style.width = (ratio * 100) + "%";
+    const bar = document.getElementById("gaugeBar");
+    bar.style.width = (ratio * 100) + "%";
 
     const icon = document.getElementById("gaugeIcon");
     const containerWidth = document.getElementById("gaugeContainer").offsetWidth;
+    const iconWidth = icon.offsetWidth;
 
-    icon.style.transform = `translateX(${ratio * containerWidth}px)`;
+    /* 画像の右端をゲージバーの右端に合わせる */
+    const x = ratio * containerWidth - iconWidth;
+
+    icon.style.transform = `translateX(${x}px)`;
   }
 
   function applyPreset() {
