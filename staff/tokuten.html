@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v6</title>
+  <title>Score Proto v8</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
     #players { display: flex; flex-direction: column; gap: 10px; }
@@ -13,7 +13,6 @@
     .score-item { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
     .layout-row #players { flex-direction: row; flex-wrap: wrap; }
 
-    /* --- Log block style --- */
     #log {
       margin-top: 20px;
       font-size: 14px;
@@ -35,9 +34,20 @@
 </head>
 <body>
 
-<h2>Score Proto v6</h2>
+<h2>Score Proto v8</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
+
+<!-- ルールプリセット -->
+<div>
+  <select id="presetSelect">
+    <option value="">ルールプリセットを選択</option>
+    <option value="nmarubatsu">n○m×</option>
+    <option value="updown">Up-Down</option>
+    <option value="freeze">Freeze</option>
+  </select>
+  <button onclick="applyPreset()">適用</button>
+</div>
 
 <!-- プレイヤー追加 -->
 <div>
@@ -73,10 +83,41 @@
 
 <script>
   let players = [];
-  let scoreItems = []; // {name, weight}
+  let scoreItems = [];
   let history = [];
   let logs = [];
   let problemCount = 0;
+
+  /* --- プリセット定義 --- */
+  const presets = {
+    nmarubatsu: {
+      items: [
+        { name: "正解", weight: 1, label: "○" },
+        { name: "誤答", weight: 1, label: "×" },
+        { name: "アドバンテージ", weight: 1, label: null }
+      ]
+    },
+    updown: {
+      items: [
+        { name: "正解", weight: 1, label: "○" },
+        { name: "誤答", weight: 1, label: "×" }
+      ]
+    },
+    freeze: {
+      items: [
+        { name: "正解", weight: 1, label: "○" },
+        { name: "誤答", weight: 1, label: "×" }
+      ]
+    }
+  };
+
+  function applyPreset() {
+    const key = document.getElementById("presetSelect").value;
+    if (!key) return;
+
+    scoreItems = JSON.parse(JSON.stringify(presets[key].items));
+    render();
+  }
 
   function render() {
     const container = document.getElementById("players");
@@ -100,15 +141,11 @@
         label.textContent = `${item.name}: ${p.scores[item.name]}`;
         row.appendChild(label);
 
+        /* --- ボタンラベルをプリセットから反映 --- */
         const plus = document.createElement("button");
-        plus.textContent = "+1";
+        plus.textContent = item.label || "+1";
         plus.onclick = () => changeScore(idx, item.name, +1);
         row.appendChild(plus);
-
-        const minus = document.createElement("button");
-        minus.textContent = "-1";
-        minus.onclick = () => changeScore(idx, item.name, -1);
-        row.appendChild(minus);
 
         div.appendChild(row);
       });
@@ -136,7 +173,7 @@
 
     if (!name || scoreItems.some(i => i.name === name)) return;
 
-    scoreItems.push({ name, weight });
+    scoreItems.push({ name, weight, label: "+1" });
     document.getElementById("itemName").value = "";
     render();
   }
@@ -144,7 +181,6 @@
   function changeScore(playerIndex, itemName, delta) {
     const p = players[playerIndex];
 
-    // Undo用
     history.push({
       type: "score",
       playerIndex,
@@ -153,30 +189,23 @@
       problemDelta: -1
     });
 
-    // スコア変更ログ（問題数ログは残さない）
-    logs.push(`${new Date().toLocaleTimeString()} ${p.name} ${itemName} ${delta > 0 ? "+" : ""}${delta}`);
+    logs.push(`${new Date().toLocaleTimeString()} ${p.name} ${itemName} +1`);
 
-    // スコア変更
     p.scores[itemName] += delta;
-
-    // 問題数 +1（ログは残さない）
     problemCount++;
 
     render();
   }
 
   function noAnswer() {
-    // Undo用
     history.push({
       type: "noAnswer",
       problemDelta: -1
     });
 
-    // スルーはログに残す
     logs.push(`${new Date().toLocaleTimeString()} スルー（無回答）`);
 
     problemCount++;
-
     render();
   }
 
@@ -187,17 +216,13 @@
     if (last.type === "score") {
       const p = players[last.playerIndex];
       p.scores[last.itemName] += last.delta;
-
-      // スコア戻しログのみ
-      logs.push(`${new Date().toLocaleTimeString()} Undo: ${p.name} ${last.itemName} ${last.delta}`);
+      logs.push(`${new Date().toLocaleTimeString()} Undo: ${p.name} ${last.itemName}`);
     }
 
     if (last.type === "noAnswer") {
-      // スルー取り消しログのみ
       logs.push(`${new Date().toLocaleTimeString()} Undo: スルー取消`);
     }
 
-    // 問題数を戻す（ログは残さない）
     if (last.problemDelta) {
       problemCount += last.problemDelta;
     }
