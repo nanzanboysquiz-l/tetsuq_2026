@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v14</title>
+  <title>Score Proto v15</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -11,23 +11,43 @@
       display: flex;
       flex-direction: row;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 20px;
     }
 
     .player {
       border: 1px solid #ccc;
-      padding: 10px;
-      border-radius: 6px;
+      padding: 15px;
+      border-radius: 10px;
       background: #fafafa;
-      width: 200px;
+      width: 220px;
     }
     .player.out { opacity: 0.4; background: #eee; }
 
+    /* プレイヤー名（大きく） */
+    .player-name {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    /* 合計（赤・大きめ） */
+    .player-total {
+      font-size: 22px;
+      color: red;
+      margin-bottom: 10px;
+    }
+
+    /* ボタン縦並び */
     .score-item {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       gap: 6px;
       margin-top: 4px;
+    }
+
+    .score-btn {
+      font-size: 20px;
+      padding: 6px 10px;
     }
 
     /* ログ */
@@ -53,7 +73,7 @@
     #gaugeWrapper {
       position: relative;
       width: 100%;
-      margin-top: 120px; /* ←画像98px + 余白20px */
+      margin-top: 120px; /* 画像高さ98px + 余白20px */
       margin-bottom: 20px;
     }
 
@@ -86,17 +106,18 @@
     /* 画像（ゲージ上を移動） */
     #gaugeIcon {
       position: absolute;
-      top: -110px; /* 画像高さ98px + 余白12px */
+      top: -110px;
       width: 98px;
       height: auto;
       transition: transform 0.3s;
       pointer-events: none;
+      display: none; /* ←問題数0のとき非表示 */
     }
   </style>
 </head>
 <body>
 
-<h2>Score Proto v14</h2>
+<h2>Score Proto v15</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
 
@@ -129,13 +150,6 @@
 <div>
   <input id="playerName" placeholder="プレイヤー名">
   <button onclick="addPlayer()">追加</button>
-</div>
-
-<!-- 項目追加 -->
-<div>
-  <input id="itemName" placeholder="得点項目名">
-  <input id="itemWeight" type="number" step="0.1" value="1" style="width:80px">
-  <button onclick="addScoreItem()">項目追加</button>
 </div>
 
 <!-- 問題数操作 -->
@@ -221,9 +235,16 @@
     const containerWidth = document.getElementById("gaugeContainer").offsetWidth;
     const iconWidth = icon.offsetWidth;
 
+    /* 問題数0 → 画像非表示 */
+    if (problemCount === 0) {
+      icon.style.display = "none";
+      return;
+    } else {
+      icon.style.display = "block";
+    }
+
     /* 画像の右端をゲージバーの右端に合わせる */
     const x = ratio * containerWidth - iconWidth;
-
     icon.style.transform = `translateX(${x}px)`;
   }
 
@@ -249,21 +270,27 @@
         stopText = `（Stop ${p.freezeStop}）`;
       }
 
-      const title = document.createElement("div");
-      title.textContent = `${p.name}${stopText}（合計: ${calcTotal(p)}）`;
-      div.appendChild(title);
+      /* プレイヤー名（大） */
+      const nameDiv = document.createElement("div");
+      nameDiv.className = "player-name";
+      nameDiv.textContent = `${p.name}${stopText}`;
+      div.appendChild(nameDiv);
 
+      /* 合計（赤・大） */
+      const totalDiv = document.createElement("div");
+      totalDiv.className = "player-total";
+      totalDiv.textContent = `合計: ${calcTotal(p)}`;
+      div.appendChild(totalDiv);
+
+      /* ボタン縦並び */
       scoreItems.forEach(item => {
         if (!(item.name in p.scores)) p.scores[item.name] = 0;
 
         const row = document.createElement("div");
         row.className = "score-item";
 
-        const label = document.createElement("span");
-        label.textContent = `${item.name}: ${p.scores[item.name]}`;
-        row.appendChild(label);
-
         const plus = document.createElement("button");
+        plus.className = "score-btn";
         plus.textContent = item.label || "+1";
 
         if (p.freezeStop > 0) plus.style.display = "none";
@@ -289,17 +316,6 @@
     if (!name) return;
     players.push({ name, scores: {}, status: "alive", freezeStop: 0 });
     document.getElementById("playerName").value = "";
-    render();
-  }
-
-  function addScoreItem() {
-    const name = document.getElementById("itemName").value;
-    const weight = parseFloat(document.getElementById("itemWeight").value);
-
-    if (!name || scoreItems.some(i => i.name === name)) return;
-
-    scoreItems.push({ name, weight, label: "+1" });
-    document.getElementById("itemName").value = "";
     render();
   }
 
