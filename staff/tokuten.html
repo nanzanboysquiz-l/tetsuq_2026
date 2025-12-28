@@ -2,13 +2,17 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v8</title>
+  <title>Score Proto v10</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
     #players { display: flex; flex-direction: column; gap: 10px; }
     .player {
       border: 1px solid #ccc; padding: 10px; border-radius: 6px;
       background: #fafafa;
+    }
+    .player.out {
+      opacity: 0.4;
+      background: #eee;
     }
     .score-item { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
     .layout-row #players { flex-direction: row; flex-wrap: wrap; }
@@ -34,7 +38,7 @@
 </head>
 <body>
 
-<h2>Score Proto v8</h2>
+<h2>Score Proto v10</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
 
@@ -88,7 +92,6 @@
   let logs = [];
   let problemCount = 0;
 
-  /* --- プリセット定義 --- */
   const presets = {
     nmarubatsu: {
       items: [
@@ -111,8 +114,12 @@
     }
   };
 
+  function getPreset() {
+    return document.getElementById("presetSelect").value;
+  }
+
   function applyPreset() {
-    const key = document.getElementById("presetSelect").value;
+    const key = getPreset();
     if (!key) return;
 
     scoreItems = JSON.parse(JSON.stringify(presets[key].items));
@@ -126,9 +133,15 @@
     players.forEach((p, idx) => {
       const div = document.createElement("div");
       div.className = "player";
+      if (p.status === "out") div.classList.add("out");
+
+      let stopText = "";
+      if (getPreset() === "freeze" && p.freezeStop > 0) {
+        stopText = `（Stop ${p.freezeStop}）`;
+      }
 
       const title = document.createElement("div");
-      title.textContent = `${p.name}（合計: ${calcTotal(p)}）`;
+      title.textContent = `${p.name}${stopText}（合計: ${calcTotal(p)}）`;
       div.appendChild(title);
 
       scoreItems.forEach(item => {
@@ -141,9 +154,13 @@
         label.textContent = `${item.name}: ${p.scores[item.name]}`;
         row.appendChild(label);
 
-        /* --- ボタンラベルをプリセットから反映 --- */
         const plus = document.createElement("button");
         plus.textContent = item.label || "+1";
+
+        /* Freeze Stop 中はボタン非表示 */
+        if (p.freezeStop > 0) plus.style.display = "none";
+
+        plus.disabled = p.status === "out";
         plus.onclick = () => changeScore(idx, item.name, +1);
         row.appendChild(plus);
 
@@ -162,7 +179,7 @@
   function addPlayer() {
     const name = document.getElementById("playerName").value;
     if (!name) return;
-    players.push({ name, scores: {} });
+    players.push({ name, scores: {}, status: "alive", freezeStop: 0 });
     document.getElementById("playerName").value = "";
     render();
   }
@@ -180,19 +197,42 @@
 
   function changeScore(playerIndex, itemName, delta) {
     const p = players[playerIndex];
+    const preset = getPreset();
 
     history.push({
       type: "score",
       playerIndex,
       itemName,
       delta: -delta,
-      problemDelta: -1
+      problemDelta: -1,
+      prevStatus: p.status,
+      prevScores: JSON.parse(JSON.stringify(p.scores)),
+      prevFreeze: p.freezeStop
     });
 
     logs.push(`${new Date().toLocaleTimeString()} ${p.name} ${itemName} +1`);
 
     p.scores[itemName] += delta;
+
+    /* --- Up-Down 特殊処理 --- */
+    if (preset === "updown" && itemName === "誤答") {
+      if (p.scores["誤答"] === 1) {
+        p.scores["正解"] = 0;
+      }
+      if (p.scores["誤答"] === 2) {
+        p.status = "out";
+      }
+    }
+
+    /* --- Freeze 特殊処理 --- */
+    if (preset === "freeze" && itemName === "誤答") {
+      p.freezeStop = p.scores["誤答"];
+    }
+
     problemCount++;
+
+    /* Freeze Stop の減少処理 */
+    applyFreezeDecay();
 
     render();
   }
@@ -200,13 +240,24 @@
   function noAnswer() {
     history.push({
       type: "noAnswer",
-      problemDelta: -1
+      problemDelta: -1,
+      prevFreeze: players.map(p => p.freezeStop)
     });
 
     logs.push(`${new Date().toLocaleTimeString()} スルー（無回答）`);
 
     problemCount++;
+
+    applyFreezeDecay();
     render();
+  }
+
+  function applyFreezeDecay() {
+    if (getPreset() !== "freeze") return;
+
+    players.forEach(p => {
+      if (p.freezeStop > 0) p.freezeStop--;
+    });
   }
 
   function undo() {
@@ -215,12 +266,20 @@
 
     if (last.type === "score") {
       const p = players[last.playerIndex];
-      p.scores[last.itemName] += last.delta;
+      p.scores = last.prevScores;
+      p.status = last.prevStatus;
+      p.freezeStop = last.prevFreeze;
+
       logs.push(`${new Date().toLocaleTimeString()} Undo: ${p.name} ${last.itemName}`);
     }
 
     if (last.type === "noAnswer") {
       logs.push(`${new Date().toLocaleTimeString()} Undo: スルー取消`);
+
+      /* Freeze Stop を復元 */
+      players.forEach((p, i) => {
+        p.freezeStop = last.prevFreeze[i];
+      });
     }
 
     if (last.problemDelta) {
