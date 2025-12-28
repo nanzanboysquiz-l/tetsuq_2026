@@ -2,45 +2,57 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v10</title>
+  <title>Score Proto v11</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
-    #players { display: flex; flex-direction: column; gap: 10px; }
+    #players { display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; }
+
     .player {
       border: 1px solid #ccc; padding: 10px; border-radius: 6px;
-      background: #fafafa;
+      background: #fafafa; width: 200px;
     }
-    .player.out {
-      opacity: 0.4;
-      background: #eee;
-    }
+    .player.out { opacity: 0.4; background: #eee; }
+
     .score-item { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
-    .layout-row #players { flex-direction: row; flex-wrap: wrap; }
 
     #log {
-      margin-top: 20px;
-      font-size: 14px;
-      max-height: 200px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      padding: 6px;
-      border-radius: 6px;
-      background: #fdfdfd;
+      margin-top: 20px; font-size: 14px; max-height: 200px;
+      overflow-y: auto; border: 1px solid #ccc; padding: 6px;
+      border-radius: 6px; background: #fdfdfd;
     }
     .log-item {
-      padding: 4px 6px;
-      margin-bottom: 4px;
-      background: #f3f3f3;
-      border-left: 4px solid #888;
-      border-radius: 4px;
+      padding: 4px 6px; margin-bottom: 4px;
+      background: #f3f3f3; border-left: 4px solid #888; border-radius: 4px;
+    }
+
+    /* ゲージ */
+    #gaugeContainer {
+      width: 100%; height: 20px; background: #ddd;
+      border-radius: 10px; margin: 10px 0;
+    }
+    #gaugeBar {
+      height: 100%; width: 0%; background: #4caf50;
+      border-radius: 10px;
+      transition: width 0.3s;
     }
   </style>
 </head>
 <body>
 
-<h2>Score Proto v10</h2>
+<h2>Score Proto v11</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
+
+<!-- 限定問題数 -->
+<div>
+  <input id="maxProblems" type="number" placeholder="限定問題数" style="width:120px">
+  <button onclick="setMaxProblems()">設定</button>
+</div>
+
+<!-- ゲージ -->
+<div id="gaugeContainer">
+  <div id="gaugeBar"></div>
+</div>
 
 <!-- ルールプリセット -->
 <div>
@@ -66,12 +78,6 @@
   <button onclick="addScoreItem()">項目追加</button>
 </div>
 
-<!-- レイアウト -->
-<div>
-  <button onclick="setLayout('column')">縦レイアウト</button>
-  <button onclick="setLayout('row')">横レイアウト</button>
-</div>
-
 <!-- 問題数操作 -->
 <div>
   <button onclick="noAnswer()">スルー（無回答）</button>
@@ -91,6 +97,8 @@
   let history = [];
   let logs = [];
   let problemCount = 0;
+  let maxProblems = null;
+  let finished = false;
 
   const presets = {
     nmarubatsu: {
@@ -116,6 +124,11 @@
 
   function getPreset() {
     return document.getElementById("presetSelect").value;
+  }
+
+  function setMaxProblems() {
+    maxProblems = parseInt(document.getElementById("maxProblems").value);
+    updateGauge();
   }
 
   function applyPreset() {
@@ -160,7 +173,9 @@
         /* Freeze Stop 中はボタン非表示 */
         if (p.freezeStop > 0) plus.style.display = "none";
 
-        plus.disabled = p.status === "out";
+        /* 脱落 or 終了時は操作不可 */
+        plus.disabled = p.status === "out" || finished;
+
         plus.onclick = () => changeScore(idx, item.name, +1);
         row.appendChild(plus);
 
@@ -196,6 +211,8 @@
   }
 
   function changeScore(playerIndex, itemName, delta) {
+    if (finished) return;
+
     const p = players[playerIndex];
     const preset = getPreset();
 
@@ -214,30 +231,27 @@
 
     p.scores[itemName] += delta;
 
-    /* --- Up-Down 特殊処理 --- */
+    /* --- Up-Down --- */
     if (preset === "updown" && itemName === "誤答") {
-      if (p.scores["誤答"] === 1) {
-        p.scores["正解"] = 0;
-      }
-      if (p.scores["誤答"] === 2) {
-        p.status = "out";
-      }
+      if (p.scores["誤答"] === 1) p.scores["正解"] = 0;
+      if (p.scores["誤答"] === 2) p.status = "out";
     }
 
-    /* --- Freeze 特殊処理 --- */
+    /* --- Freeze --- */
     if (preset === "freeze" && itemName === "誤答") {
-      p.freezeStop = p.scores["誤答"];
+      p.freezeStop = p.scores["誤答"];  // 誤答数+1後に適用
     }
 
     problemCount++;
-
-    /* Freeze Stop の減少処理 */
     applyFreezeDecay();
-
+    updateGauge();
+    checkFinish();
     render();
   }
 
   function noAnswer() {
+    if (finished) return;
+
     history.push({
       type: "noAnswer",
       problemDelta: -1,
@@ -247,8 +261,9 @@
     logs.push(`${new Date().toLocaleTimeString()} スルー（無回答）`);
 
     problemCount++;
-
     applyFreezeDecay();
+    updateGauge();
+    checkFinish();
     render();
   }
 
@@ -258,6 +273,19 @@
     players.forEach(p => {
       if (p.freezeStop > 0) p.freezeStop--;
     });
+  }
+
+  function checkFinish() {
+    if (maxProblems && problemCount >= maxProblems) {
+      finished = true;
+      logs.push(`${new Date().toLocaleTimeString()} ★終了★`);
+    }
+  }
+
+  function updateGauge() {
+    if (!maxProblems) return;
+    const ratio = Math.min(problemCount / maxProblems, 1);
+    document.getElementById("gaugeBar").style.width = (ratio * 100) + "%";
   }
 
   function undo() {
@@ -275,8 +303,6 @@
 
     if (last.type === "noAnswer") {
       logs.push(`${new Date().toLocaleTimeString()} Undo: スルー取消`);
-
-      /* Freeze Stop を復元 */
       players.forEach((p, i) => {
         p.freezeStop = last.prevFreeze[i];
       });
@@ -286,6 +312,8 @@
       problemCount += last.problemDelta;
     }
 
+    finished = false;
+    updateGauge();
     render();
   }
 
@@ -308,14 +336,6 @@
       div.textContent = line;
       logDiv.appendChild(div);
     });
-  }
-
-  function setLayout(type) {
-    if (type === "row") {
-      document.body.classList.add("layout-row");
-    } else {
-      document.body.classList.remove("layout-row");
-    }
   }
 </script>
 
