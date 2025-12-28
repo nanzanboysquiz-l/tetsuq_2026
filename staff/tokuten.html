@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Score Proto</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    #players {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .player {
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    .score-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .layout-row #players {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Score Proto</h2>
+
+<div>
+  <input id="playerName" placeholder="プレイヤー名">
+  <button onclick="addPlayer()">追加</button>
+</div>
+
+<div>
+  <input id="itemName" placeholder="得点項目名（例：score, bonus）">
+  <button onclick="addScoreItem()">項目追加</button>
+</div>
+
+<div>
+  <button onclick="setLayout('column')">縦レイアウト</button>
+  <button onclick="setLayout('row')">横レイアウト</button>
+</div>
+
+<hr>
+
+<div id="players"></div>
+
+<script>
+  let players = [];
+  let scoreItems = [];
+
+  function render() {
+    const container = document.getElementById("players");
+    container.innerHTML = "";
+
+    players.forEach((p, idx) => {
+      const div = document.createElement("div");
+      div.className = "player";
+
+      const title = document.createElement("div");
+      title.textContent = p.name;
+      div.appendChild(title);
+
+      scoreItems.forEach(item => {
+        if (!(item in p.scores)) p.scores[item] = 0;
+
+        const row = document.createElement("div");
+        row.className = "score-item";
+
+        const label = document.createElement("span");
+        label.textContent = `${item}: ${p.scores[item]}`;
+        row.appendChild(label);
+
+        const plus = document.createElement("button");
+        plus.textContent = "+1";
+        plus.onclick = () => {
+          p.scores[item]++;
+          render();
+        };
+        row.appendChild(plus);
+
+        const minus = document.createElement("button");
+        minus.textContent = "-1";
+        minus.onclick = () => {
+          p.scores[item]--;
+          render();
+        };
+        row.appendChild(minus);
+
+        div.appendChild(row);
+      });
+
+      container.appendChild(div);
+    });
+  }
+
+  function addPlayer() {
+    const name = document.getElementById("playerName").value;
+    if (!name) return;
+    players.push({ name, scores: {} });
+    document.getElementById("playerName").value = "";
+    render();
+  }
+
+  function addScoreItem() {
+    const item = document.getElementById("itemName").value;
+    if (!item || scoreItems.includes(item)) return;
+    scoreItems.push(item);
+    document.getElementById("itemName").value = "";
+    render();
+  }
+
+  function setLayout(type) {
+    if (type === "row") {
+      document.body.classList.add("layout-row");
+    } else {
+      document.body.classList.remove("layout-row");
+    }
+  }
+</script>
+
+</body>
+</html>
