@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v2</title>
+  <title>Score Proto v3</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
     #players { display: flex; flex-direction: column; gap: 10px; }
@@ -12,12 +12,30 @@
     }
     .score-item { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
     .layout-row #players { flex-direction: row; flex-wrap: wrap; }
-    #log { margin-top: 20px; font-size: 14px; }
+
+    /* --- Log block style --- */
+    #log {
+      margin-top: 20px;
+      font-size: 14px;
+      max-height: 200px;      /* 固定高さ */
+      overflow-y: auto;       /* スクロール */
+      border: 1px solid #ccc;
+      padding: 6px;
+      border-radius: 6px;
+      background: #fdfdfd;
+    }
+    .log-item {
+      padding: 4px 6px;
+      margin-bottom: 4px;
+      background: #f3f3f3;
+      border-left: 4px solid #888;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
 
-<h2>Score Proto v2</h2>
+<h2>Score Proto v3</h2>
 
 <!-- プレイヤー追加 -->
 <div>
@@ -163,7 +181,14 @@
 
   function renderLog() {
     const logDiv = document.getElementById("log");
-    logDiv.innerHTML = logs.slice(-20).join("<br>");
+    logDiv.innerHTML = "";
+
+    logs.slice(-200).forEach(line => {
+      const div = document.createElement("div");
+      div.className = "log-item";
+      div.textContent = line;
+      logDiv.appendChild(div);
+    });
   }
 
   function setLayout(type) {
