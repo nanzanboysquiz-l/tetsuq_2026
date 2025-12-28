@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v13</title>
+  <title>Score Proto v14</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -49,11 +49,12 @@
       border-radius: 4px;
     }
 
-    /* ゲージ */
+    /* ゲージ全体（画像の高さを考慮して下げる） */
     #gaugeWrapper {
       position: relative;
       width: 100%;
-      margin: 20px 0;
+      margin-top: 120px; /* ←画像98px + 余白20px */
+      margin-bottom: 20px;
     }
 
     #gaugeContainer {
@@ -95,7 +96,7 @@
 </head>
 <body>
 
-<h2>Score Proto v13</h2>
+<h2>Score Proto v14</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
 
