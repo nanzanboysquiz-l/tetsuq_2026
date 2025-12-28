@@ -2,61 +2,63 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto</title>
+  <title>Score Proto v2</title>
   <style>
-    body {
-      font-family: sans-serif;
-      margin: 20px;
-    }
-    #players {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+    body { font-family: sans-serif; margin: 20px; }
+    #players { display: flex; flex-direction: column; gap: 10px; }
     .player {
-      border: 1px solid #ccc;
-      padding: 10px;
-      border-radius: 6px;
+      border: 1px solid #ccc; padding: 10px; border-radius: 6px;
       background: #fafafa;
     }
-    .score-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 4px;
-    }
-    .layout-row #players {
-      flex-direction: row;
-      flex-wrap: wrap;
-    }
+    .score-item { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+    .layout-row #players { flex-direction: row; flex-wrap: wrap; }
+    #log { margin-top: 20px; font-size: 14px; }
   </style>
 </head>
 <body>
 
-<h2>Score Proto</h2>
+<h2>Score Proto v2</h2>
 
+<!-- プレイヤー追加 -->
 <div>
   <input id="playerName" placeholder="プレイヤー名">
   <button onclick="addPlayer()">追加</button>
 </div>
 
+<!-- 項目追加 -->
 <div>
-  <input id="itemName" placeholder="得点項目名（例：score, bonus）">
+  <input id="itemName" placeholder="得点項目名">
+  <input id="itemWeight" type="number" step="0.1" value="1" style="width:80px">
+  <select id="itemSign">
+    <option value="1">正</option>
+    <option value="-1">負</option>
+  </select>
   <button onclick="addScoreItem()">項目追加</button>
 </div>
 
+<!-- レイアウト -->
 <div>
   <button onclick="setLayout('column')">縦レイアウト</button>
   <button onclick="setLayout('row')">横レイアウト</button>
+</div>
+
+<!-- Undo -->
+<div>
+  <button onclick="undo()">Undo</button>
 </div>
 
 <hr>
 
 <div id="players"></div>
 
+<h3>Log</h3>
+<div id="log"></div>
+
 <script>
   let players = [];
-  let scoreItems = [];
+  let scoreItems = []; // {name, weight, sign}
+  let history = [];    // undo用
+  let logs = [];       // 表示用ログ
 
   function render() {
     const container = document.getElementById("players");
@@ -67,33 +69,27 @@
       div.className = "player";
 
       const title = document.createElement("div");
-      title.textContent = p.name;
+      title.textContent = `${p.name}（合計: ${calcTotal(p)}）`;
       div.appendChild(title);
 
       scoreItems.forEach(item => {
-        if (!(item in p.scores)) p.scores[item] = 0;
+        if (!(item.name in p.scores)) p.scores[item.name] = 0;
 
         const row = document.createElement("div");
         row.className = "score-item";
 
         const label = document.createElement("span");
-        label.textContent = `${item}: ${p.scores[item]}`;
+        label.textContent = `${item.name}: ${p.scores[item.name]}`;
         row.appendChild(label);
 
         const plus = document.createElement("button");
         plus.textContent = "+1";
-        plus.onclick = () => {
-          p.scores[item]++;
-          render();
-        };
+        plus.onclick = () => changeScore(idx, item.name, +1);
         row.appendChild(plus);
 
         const minus = document.createElement("button");
         minus.textContent = "-1";
-        minus.onclick = () => {
-          p.scores[item]--;
-          render();
-        };
+        minus.onclick = () => changeScore(idx, item.name, -1);
         row.appendChild(minus);
 
         div.appendChild(row);
@@ -101,6 +97,8 @@
 
       container.appendChild(div);
     });
+
+    renderLog();
   }
 
   function addPlayer() {
@@ -112,11 +110,60 @@
   }
 
   function addScoreItem() {
-    const item = document.getElementById("itemName").value;
-    if (!item || scoreItems.includes(item)) return;
-    scoreItems.push(item);
+    const name = document.getElementById("itemName").value;
+    const weight = parseFloat(document.getElementById("itemWeight").value);
+    const sign = parseInt(document.getElementById("itemSign").value);
+
+    if (!name || scoreItems.some(i => i.name === name)) return;
+
+    scoreItems.push({ name, weight, sign });
     document.getElementById("itemName").value = "";
     render();
+  }
+
+  function changeScore(playerIndex, itemName, delta) {
+    const p = players[playerIndex];
+
+    // Undo用に記録
+    history.push({
+      playerIndex,
+      itemName,
+      delta: -delta // undoは逆操作
+    });
+
+    // ログ
+    logs.push(`${new Date().toLocaleTimeString()} ${p.name} ${itemName} ${delta > 0 ? "+" : ""}${delta}`);
+
+    // 実際の変更
+    p.scores[itemName] += delta;
+
+    render();
+  }
+
+  function undo() {
+    const last = history.pop();
+    if (!last) return;
+
+    const p = players[last.playerIndex];
+    p.scores[last.itemName] += last.delta;
+
+    logs.push(`${new Date().toLocaleTimeString()} Undo: ${p.name} ${last.itemName} ${last.delta}`);
+
+    render();
+  }
+
+  function calcTotal(player) {
+    let total = 0;
+    scoreItems.forEach(item => {
+      const v = player.scores[item.name] || 0;
+      total += v * item.weight * item.sign;
+    });
+    return total;
+  }
+
+  function renderLog() {
+    const logDiv = document.getElementById("log");
+    logDiv.innerHTML = logs.slice(-20).join("<br>");
   }
 
   function setLayout(type) {
