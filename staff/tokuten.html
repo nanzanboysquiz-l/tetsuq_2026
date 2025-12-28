@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v3</title>
+  <title>Score Proto v6</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
     #players { display: flex; flex-direction: column; gap: 10px; }
@@ -17,8 +17,8 @@
     #log {
       margin-top: 20px;
       font-size: 14px;
-      max-height: 200px;      /* 固定高さ */
-      overflow-y: auto;       /* スクロール */
+      max-height: 200px;
+      overflow-y: auto;
       border: 1px solid #ccc;
       padding: 6px;
       border-radius: 6px;
@@ -35,7 +35,9 @@
 </head>
 <body>
 
-<h2>Score Proto v3</h2>
+<h2>Score Proto v6</h2>
+
+<h3 id="problemCountDisplay">問題数: 0</h3>
 
 <!-- プレイヤー追加 -->
 <div>
@@ -47,10 +49,6 @@
 <div>
   <input id="itemName" placeholder="得点項目名">
   <input id="itemWeight" type="number" step="0.1" value="1" style="width:80px">
-  <select id="itemSign">
-    <option value="1">正</option>
-    <option value="-1">負</option>
-  </select>
   <button onclick="addScoreItem()">項目追加</button>
 </div>
 
@@ -60,8 +58,9 @@
   <button onclick="setLayout('row')">横レイアウト</button>
 </div>
 
-<!-- Undo -->
+<!-- 問題数操作 -->
 <div>
+  <button onclick="noAnswer()">スルー（無回答）</button>
   <button onclick="undo()">Undo</button>
 </div>
 
@@ -74,9 +73,10 @@
 
 <script>
   let players = [];
-  let scoreItems = []; // {name, weight, sign}
-  let history = [];    // undo用
-  let logs = [];       // 表示用ログ
+  let scoreItems = []; // {name, weight}
+  let history = [];
+  let logs = [];
+  let problemCount = 0;
 
   function render() {
     const container = document.getElementById("players");
@@ -116,6 +116,9 @@
       container.appendChild(div);
     });
 
+    document.getElementById("problemCountDisplay").textContent =
+      `問題数: ${problemCount}`;
+
     renderLog();
   }
 
@@ -130,11 +133,10 @@
   function addScoreItem() {
     const name = document.getElementById("itemName").value;
     const weight = parseFloat(document.getElementById("itemWeight").value);
-    const sign = parseInt(document.getElementById("itemSign").value);
 
     if (!name || scoreItems.some(i => i.name === name)) return;
 
-    scoreItems.push({ name, weight, sign });
+    scoreItems.push({ name, weight });
     document.getElementById("itemName").value = "";
     render();
   }
@@ -142,18 +144,38 @@
   function changeScore(playerIndex, itemName, delta) {
     const p = players[playerIndex];
 
-    // Undo用に記録
+    // Undo用
     history.push({
+      type: "score",
       playerIndex,
       itemName,
-      delta: -delta // undoは逆操作
+      delta: -delta,
+      problemDelta: -1
     });
 
-    // ログ
+    // スコア変更ログ（問題数ログは残さない）
     logs.push(`${new Date().toLocaleTimeString()} ${p.name} ${itemName} ${delta > 0 ? "+" : ""}${delta}`);
 
-    // 実際の変更
+    // スコア変更
     p.scores[itemName] += delta;
+
+    // 問題数 +1（ログは残さない）
+    problemCount++;
+
+    render();
+  }
+
+  function noAnswer() {
+    // Undo用
+    history.push({
+      type: "noAnswer",
+      problemDelta: -1
+    });
+
+    // スルーはログに残す
+    logs.push(`${new Date().toLocaleTimeString()} スルー（無回答）`);
+
+    problemCount++;
 
     render();
   }
@@ -162,10 +184,23 @@
     const last = history.pop();
     if (!last) return;
 
-    const p = players[last.playerIndex];
-    p.scores[last.itemName] += last.delta;
+    if (last.type === "score") {
+      const p = players[last.playerIndex];
+      p.scores[last.itemName] += last.delta;
 
-    logs.push(`${new Date().toLocaleTimeString()} Undo: ${p.name} ${last.itemName} ${last.delta}`);
+      // スコア戻しログのみ
+      logs.push(`${new Date().toLocaleTimeString()} Undo: ${p.name} ${last.itemName} ${last.delta}`);
+    }
+
+    if (last.type === "noAnswer") {
+      // スルー取り消しログのみ
+      logs.push(`${new Date().toLocaleTimeString()} Undo: スルー取消`);
+    }
+
+    // 問題数を戻す（ログは残さない）
+    if (last.problemDelta) {
+      problemCount += last.problemDelta;
+    }
 
     render();
   }
@@ -174,7 +209,7 @@
     let total = 0;
     scoreItems.forEach(item => {
       const v = player.scores[item.name] || 0;
-      total += v * item.weight * item.sign;
+      total += v * item.weight;
     });
     return total;
   }
