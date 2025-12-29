@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v27</title>
+  <title>Score Proto v28</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -267,10 +267,10 @@ function loadCSV() {
     }
 
     updateQuestionDisplay();
-  };
+  };  // ← onload の終わり
 
   reader.readAsText(file, "UTF-8");
-}
+}      // ← loadCSV の終わり（重要！）
 
 /* 問題番号に応じて表示更新 */
 function updateQuestionDisplay() {
@@ -284,8 +284,8 @@ function updateQuestionDisplay() {
     return;
   }
 
- document.getElementById("topScroll").textContent = item.question;
-document.getElementById("messageWindow").textContent = item.answer;
+  document.getElementById("topScroll").textContent = item.question;
+  document.getElementById("messageWindow").textContent = item.answer;
 }
 
 /* Freeze 減衰 */
