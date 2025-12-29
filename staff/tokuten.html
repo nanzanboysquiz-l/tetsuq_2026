@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v22</title>
+  <title>Score Proto v23</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -35,12 +35,14 @@
       text-orientation: upright;
       font-weight: 900;
       line-height: 1.1;
-      height: 180px;
-      width: 40px;
-      white-space: nowrap;
+      height: 180px;          /* 完全固定 */
+      width: 40px;            /* 折り返し防止の固定幅 */
+      white-space: nowrap;    /* 折り返し禁止 */
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 36px;        /* 最大フォントサイズ */
+      transform-origin: center center; /* scaleY 用 */
     }
 
     /* 状態表示（固定高さ） */
@@ -146,7 +148,7 @@
 </head>
 <body>
 
-<h2>Score Proto v22</h2>
+<h2>Score Proto v23</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
 
@@ -280,16 +282,16 @@
     render();
   }
 
+  /* 名前の自動縮小（縦方向のみ scaleY） */
   function adjustNameSize(nameDiv) {
-    const maxFont = 36;
     const maxHeight = 180;
 
-    nameDiv.style.fontSize = maxFont + "px";
+    nameDiv.style.transform = "scaleY(1)";
     const actual = nameDiv.scrollHeight;
 
     if (actual > maxHeight) {
       const scale = maxHeight / actual;
-      nameDiv.style.fontSize = (maxFont * scale) + "px";
+      nameDiv.style.transform = `scaleY(${scale})`;
     }
   }
 
@@ -302,12 +304,14 @@
       div.className = "player";
       if (p.status === "out") div.classList.add("out");
 
+      /* 名前（縦書き・自動縮小） */
       const nameDiv = document.createElement("div");
       nameDiv.className = "player-name";
       nameDiv.textContent = p.name;
       div.appendChild(nameDiv);
-      setTimeout(() => adjustNameSize(nameDiv), 0);
+      requestAnimationFrame(() => adjustNameSize(nameDiv));
 
+      /* 状態表示 */
       const statusDiv = document.createElement("div");
       statusDiv.className = "player-status";
       if (getPreset() === "freeze" && p.freezeStop > 0) {
@@ -319,6 +323,7 @@
       }
       div.appendChild(statusDiv);
 
+      /* 得点表示：合計 - 誤答数 */
       const scoreLine = document.createElement("div");
       scoreLine.className = "player-scoreline";
 
@@ -333,6 +338,7 @@
       `;
       div.appendChild(scoreLine);
 
+      /* ボタン（○ ×） */
       const btnRow = document.createElement("div");
       btnRow.className = "player-buttons";
 
@@ -380,7 +386,7 @@
       p.scores[itemName] = 0;
     }
 
-    history.push({
+    const prevData = {
       type: "score",
       playerIndex,
       itemName,
@@ -389,12 +395,16 @@
       prevStatus: p.status,
       prevScores: JSON.parse(JSON.stringify(p.scores)),
       prevFreeze: p.freezeStop
-    });
+    };
+
+    let skipFreezeDecay = false;
 
     logs.push(`${new Date().toLocaleTimeString()} ${p.name} ${itemName} +1`);
 
+    /* スコア加算 */
     p.scores[itemName] += delta;
 
+    /* Up-Down */
     if (preset === "updown" && itemName === "誤答") {
       if (p.scores["誤答"] === 1) {
         if (typeof p.scores["正解"] !== "number") p.scores["正解"] = 0;
@@ -405,12 +415,18 @@
       }
     }
 
+    /* Freeze：誤答数加算後に Stop をセットし、この問題では減衰しない */
     if (preset === "freeze" && itemName === "誤答") {
-      p.freezeStop = p.scores["誤答"];
+      p.freezeStop = p.scores["誤答"];  // 加算後の値
+      skipFreezeDecay = true;
     }
 
+    history.push(prevData);
+
     problemCount++;
-    applyFreezeDecay();
+    if (!skipFreezeDecay) {
+      applyFreezeDecay();
+    }
     updateGauge();
     checkFinish();
     render();
