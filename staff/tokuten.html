@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v21</title>
+  <title>Score Proto v22</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -20,8 +20,8 @@
       padding: 10px;
       border-radius: 10px;
       background: #fafafa;
-      width: 9vw;              /* ←画面幅の9% → 10人並ぶ */
-      height: 300px;           /* ←高さ固定でズレない */
+      width: 9vw;
+      height: 300px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -35,9 +35,9 @@
       text-orientation: upright;
       font-weight: 900;
       line-height: 1.1;
-      height: 180px;           /* ←完全固定 */
-      width: 40px;             /* ←固定幅で折り返し防止 */
-      white-space: nowrap;     /* ←折り返し禁止 */
+      height: 180px;
+      width: 40px;
+      white-space: nowrap;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -146,7 +146,7 @@
 </head>
 <body>
 
-<h2>Score Proto v21</h2>
+<h2>Score Proto v22</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
 
@@ -203,7 +203,6 @@
   let maxProblems = null;
   let finished = false;
 
-  /* 誤答は weight 0 に修正済み */
   const presets = {
     nmarubatsu: {
       items: [
@@ -230,14 +229,12 @@
     return document.getElementById("presetSelect").value;
   }
 
-  /* 限定問題数設定 */
   function setMaxProblems() {
     maxProblems = parseInt(document.getElementById("maxProblems").value);
     drawGaugeTicks();
     updateGauge();
   }
 
-  /* 節を描画（5問ごと） */
   function drawGaugeTicks() {
     const container = document.getElementById("gaugeContainer");
     container.querySelectorAll(".gaugeTick").forEach(e => e.remove());
@@ -253,7 +250,6 @@
     }
   }
 
-  /* ゲージ更新 + 画像移動（右端合わせ） */
   function updateGauge() {
     if (!maxProblems) return;
 
@@ -284,13 +280,11 @@
     render();
   }
 
-  /* 名前の自動縮小（縦方向のみ） */
   function adjustNameSize(nameDiv) {
     const maxFont = 36;
     const maxHeight = 180;
 
     nameDiv.style.fontSize = maxFont + "px";
-
     const actual = nameDiv.scrollHeight;
 
     if (actual > maxHeight) {
@@ -308,15 +302,12 @@
       div.className = "player";
       if (p.status === "out") div.classList.add("out");
 
-      /* 名前（縦書き・自動縮小） */
       const nameDiv = document.createElement("div");
       nameDiv.className = "player-name";
       nameDiv.textContent = p.name;
       div.appendChild(nameDiv);
-
       setTimeout(() => adjustNameSize(nameDiv), 0);
 
-      /* 状態表示 */
       const statusDiv = document.createElement("div");
       statusDiv.className = "player-status";
       if (getPreset() === "freeze" && p.freezeStop > 0) {
@@ -328,12 +319,12 @@
       }
       div.appendChild(statusDiv);
 
-      /* 得点表示：合計 - 誤答数 */
       const scoreLine = document.createElement("div");
       scoreLine.className = "player-scoreline";
 
       const total = calcTotal(p);
-      const wrong = p.scores["誤答"] || 0;
+      const rawWrong = p.scores["誤答"];
+      const wrong = Number.isFinite(rawWrong) ? rawWrong : 0;
 
       scoreLine.innerHTML = `
         <span class="player-score-total">${total}</span>
@@ -342,7 +333,6 @@
       `;
       div.appendChild(scoreLine);
 
-      /* ボタン（○ ×） */
       const btnRow = document.createElement("div");
       btnRow.className = "player-buttons";
 
@@ -386,6 +376,10 @@
     const p = players[playerIndex];
     const preset = getPreset();
 
+    if (typeof p.scores[itemName] !== "number") {
+      p.scores[itemName] = 0;
+    }
+
     history.push({
       type: "score",
       playerIndex,
@@ -401,13 +395,16 @@
 
     p.scores[itemName] += delta;
 
-    /* Up-Down */
     if (preset === "updown" && itemName === "誤答") {
-      if (p.scores["誤答"] === 1) p.scores["正解"] = 0;
-      if (p.scores["誤答"] === 2) p.status = "out";
+      if (p.scores["誤答"] === 1) {
+        if (typeof p.scores["正解"] !== "number") p.scores["正解"] = 0;
+        p.scores["正解"] = 0;
+      }
+      if (p.scores["誤答"] === 2) {
+        p.status = "out";
+      }
     }
 
-    /* Freeze */
     if (preset === "freeze" && itemName === "誤答") {
       p.freezeStop = p.scores["誤答"];
     }
@@ -484,8 +481,9 @@
   function calcTotal(player) {
     let total = 0;
     scoreItems.forEach(item => {
-      const v = player.scores[item.name] || 0;
-      total += v * item.weight;
+      const v = player.scores[item.name];
+      const safe = Number.isFinite(v) ? v : 0;
+      total += safe * item.weight;
     });
     return total;
   }
