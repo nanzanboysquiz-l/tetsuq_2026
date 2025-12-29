@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v15</title>
+  <title>Score Proto v16</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -19,21 +19,49 @@
       padding: 15px;
       border-radius: 10px;
       background: #fafafa;
-      width: 220px;
+      width: 260px;
+      height: 260px;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
     }
     .player.out { opacity: 0.4; background: #eee; }
 
-    /* プレイヤー名（大きく） */
+    /* 左側：縦書きプレイヤー名 */
     .player-name {
-      font-size: 28px;
-      font-weight: bold;
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      font-size: 36px;
+      font-weight: 900;
+      line-height: 1.1;
+      border-right: 2px solid #ccc;
+      padding-right: 10px;
+      height: 100%;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    /* 右側：スコア・状態・ボタン */
+    .player-right {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      width: 100%;
+    }
+
+    /* 状態表示欄（Stopなど） */
+    .player-status {
+      height: 28px;
+      font-size: 20px;
+      color: #333;
       margin-bottom: 6px;
     }
 
-    /* 合計（赤・大きめ） */
+    /* 合計（数字のみ・大きく赤） */
     .player-total {
-      font-size: 22px;
+      font-size: 36px;
       color: red;
+      font-weight: bold;
       margin-bottom: 10px;
     }
 
@@ -46,7 +74,7 @@
     }
 
     .score-btn {
-      font-size: 20px;
+      font-size: 22px;
       padding: 6px 10px;
     }
 
@@ -73,7 +101,7 @@
     #gaugeWrapper {
       position: relative;
       width: 100%;
-      margin-top: 120px; /* 画像高さ98px + 余白20px */
+      margin-top: 120px;
       margin-bottom: 20px;
     }
 
@@ -93,7 +121,7 @@
       transition: width 0.3s;
     }
 
-    /* 節（5問ごと）を太く */
+    /* 節（5問ごと） */
     .gaugeTick {
       position: absolute;
       top: -4px;
@@ -111,13 +139,13 @@
       height: auto;
       transition: transform 0.3s;
       pointer-events: none;
-      display: none; /* ←問題数0のとき非表示 */
+      display: none;
     }
   </style>
 </head>
 <body>
 
-<h2>Score Proto v15</h2>
+<h2>Score Proto v16</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
 
@@ -235,7 +263,6 @@
     const containerWidth = document.getElementById("gaugeContainer").offsetWidth;
     const iconWidth = icon.offsetWidth;
 
-    /* 問題数0 → 画像非表示 */
     if (problemCount === 0) {
       icon.style.display = "none";
       return;
@@ -243,7 +270,6 @@
       icon.style.display = "block";
     }
 
-    /* 画像の右端をゲージバーの右端に合わせる */
     const x = ratio * containerWidth - iconWidth;
     icon.style.transform = `translateX(${x}px)`;
   }
@@ -265,22 +291,35 @@
       div.className = "player";
       if (p.status === "out") div.classList.add("out");
 
-      let stopText = "";
-      if (getPreset() === "freeze" && p.freezeStop > 0) {
-        stopText = `（Stop ${p.freezeStop}）`;
-      }
-
-      /* プレイヤー名（大） */
+      /* 左側：縦書きプレイヤー名 */
       const nameDiv = document.createElement("div");
       nameDiv.className = "player-name";
-      nameDiv.textContent = `${p.name}${stopText}`;
+      nameDiv.textContent = p.name;
       div.appendChild(nameDiv);
 
-      /* 合計（赤・大） */
+      /* 右側：状態・合計・ボタン */
+      const right = document.createElement("div");
+      right.className = "player-right";
+
+      /* 状態表示欄 */
+      const statusDiv = document.createElement("div");
+      statusDiv.className = "player-status";
+
+      if (getPreset() === "freeze" && p.freezeStop > 0) {
+        statusDiv.textContent = `Stop ${p.freezeStop}`;
+      } else if (p.status === "out") {
+        statusDiv.textContent = "脱落";
+      } else {
+        statusDiv.textContent = "";
+      }
+
+      right.appendChild(statusDiv);
+
+      /* 合計（数字のみ） */
       const totalDiv = document.createElement("div");
       totalDiv.className = "player-total";
-      totalDiv.textContent = `合計: ${calcTotal(p)}`;
-      div.appendChild(totalDiv);
+      totalDiv.textContent = calcTotal(p);
+      right.appendChild(totalDiv);
 
       /* ボタン縦並び */
       scoreItems.forEach(item => {
@@ -299,9 +338,10 @@
         plus.onclick = () => changeScore(idx, item.name, +1);
         row.appendChild(plus);
 
-        div.appendChild(row);
+        right.appendChild(row);
       });
 
+      div.appendChild(right);
       container.appendChild(div);
     });
 
@@ -346,7 +386,7 @@
       if (p.scores["誤答"] === 2) p.status = "out";
     }
 
-    /* Freeze（誤答数+1後に Stop n） */
+    /* Freeze */
     if (preset === "freeze" && itemName === "誤答") {
       p.freezeStop = p.scores["誤答"];
     }
