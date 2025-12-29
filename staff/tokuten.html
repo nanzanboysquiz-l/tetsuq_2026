@@ -284,9 +284,14 @@ function updateQuestionDisplay() {
     return;
   }
 
-  document.getElementById("topScroll").textContent = item.question;
-  document.getElementById("messageWindow").textContent = item.answer;
+ document.getElementById("topScroll").textContent = item.question;
+document.getElementById("messageWindow").textContent = item.answer;
 }
+
+/* Freeze 減衰 */
+function applyFreezeDecay() {
+  if (getPreset() !== "freeze") return;
+
   players.forEach(p => {
     if (p.freezeStop > 0) p.freezeStop--;
   });
