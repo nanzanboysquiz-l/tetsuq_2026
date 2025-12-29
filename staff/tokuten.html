@@ -285,12 +285,13 @@
   /* 名前の自動縮小（縦方向のみ scaleY） */
   function adjustNameSize(nameDiv) {
     const maxHeight = 180;
+    const marginFactor = 0.90;
 
     nameDiv.style.transform = "scaleY(1)";
     const actual = nameDiv.scrollHeight;
 
     if (actual > maxHeight) {
-      const scale = maxHeight / actual;
+      const scale = (maxHeight / actual) * marginFactor;
       nameDiv.style.transform = `scaleY(${scale})`;
     }
   }
