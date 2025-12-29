@@ -2,11 +2,11 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v29</title>
+  <title>Score Proto v30</title>
+
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
-    /* 画面幅いっぱいの黒背景スクロール帯 */
     #topScroll {
       background: black;
       color: white;
@@ -14,11 +14,10 @@
       overflow-x: auto;
       white-space: nowrap;
       padding: 4px 8px;
-      width: calc(100% - 40px); /* 左右余白20px×2 */
+      width: calc(100% - 40px);
       margin-bottom: 6px;
     }
 
-    /* 画面幅いっぱいの黒背景文字列窓 */
     #messageWindow {
       background: black;
       color: white;
@@ -30,7 +29,6 @@
       margin-bottom: 10px;
     }
 
-    /* プレイヤー一覧（横並び） */
     #players {
       display: flex;
       flex-direction: row;
@@ -38,8 +36,7 @@
       gap: 10px;
     }
 
-    /* プレイヤーカード：幅固定（10人並ぶ）、高さ固定 */
-    .player {
+    .player-card {
       border: 1px solid #ccc;
       padding: 10px;
       border-radius: 10px;
@@ -51,9 +48,8 @@
       align-items: center;
       gap: 10px;
     }
-    .player.out { opacity: 0.4; background: #eee; }
+    .player-out { opacity: 0.4; background: #eee; }
 
-    /* 名前欄（縦書き・中央寄せ・折り返し禁止・高さ固定） */
     .player-name {
       writing-mode: vertical-rl;
       text-orientation: upright;
@@ -66,20 +62,9 @@
       align-items: center;
       justify-content: center;
       font-size: 36px;
-      transform-origin: center center;
     }
 
-    /* 状態表示（固定高さ） */
-    .player-status {
-      font-size: 18px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* 得点表示（合計 - 誤答数） */
-    .player-scoreline {
+    .player-score {
       font-size: 28px;
       font-weight: bold;
       height: 40px;
@@ -87,11 +72,7 @@
       align-items: center;
       justify-content: center;
     }
-    .player-score-total { color: red; }
-    .player-score-dash  { color: black; }
-    .player-score-wrong { color: blue; }
 
-    /* ボタン（横並び・固定高さ） */
     .player-buttons {
       display: flex;
       flex-direction: row;
@@ -100,12 +81,12 @@
       align-items: center;
       justify-content: center;
     }
+
     .score-btn {
       font-size: 20px;
       padding: 4px 10px;
     }
 
-    /* ログ */
     #log {
       margin-top: 20px;
       font-size: 14px;
@@ -124,7 +105,6 @@
       border-radius: 4px;
     }
 
-    /* ゲージ全体 */
     #gaugeWrapper {
       position: relative;
       width: 100%;
@@ -148,15 +128,6 @@
       transition: width 0.3s;
     }
 
-    .gaugeTick {
-      position: absolute;
-      top: -4px;
-      width: 4px;
-      height: 28px;
-      background: #333;
-      border-radius: 2px;
-    }
-
     #gaugeIcon {
       position: absolute;
       top: -110px;
@@ -168,22 +139,18 @@
     }
   </style>
 </head>
+
 <body>
 
-<h2>Score Proto v26</h2>
-
-<!-- ▼▼▼ 上部 UI（問題数より上） ▼▼▼ -->
+<h2>Score Proto v30</h2>
 
 <div id="topScroll">ここに問題文が表示されます</div>
-
 <div id="messageWindow">ここに解答が表示されます</div>
 
 <div style="margin-bottom: 20px;">
   <input type="file" id="csvInput" accept=".csv">
   <button onclick="loadCSV()">CSV読み込み</button>
 </div>
-
-<!-- ▲▲▲ 上部 UI ここまで ▲▲▲ -->
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
 
@@ -226,15 +193,11 @@
 <h3>Log</h3>
 <div id="log"></div>
 
-<!-- ▼▼▼ v29 SCRIPT PART 1/2 : LINES 1–300 ▼▼▼ -->
-
 <script>
 /* ============================
-   v29 JavaScript — PART 1/2
-   Lines 1–300
+   v30 JavaScript
 ============================ */
 
-/* --- 基本データ --- */
 let players = [];
 let scoreItems = [];
 let history = [];
@@ -243,11 +206,11 @@ let problemCount = 0;
 let maxProblems = null;
 let finished = false;
 
-let questionData = []; // CSV の問題データ
+let questionData = [];
 
-/* --- 限定問題数設定 --- */
+/* 限定問題数設定 */
 function setMaxProblems() {
-  const input = document.getElementById("maxProblemsInput").value.trim();
+  const input = document.getElementById("maxProblems").value.trim();
   if (!input) {
     maxProblems = null;
     updateGauge();
@@ -264,27 +227,7 @@ function setMaxProblems() {
   updateGauge();
 }
 
-/* --- ゲージの目盛り描画 --- */
-function drawGaugeTicks() {
-  const container = document.getElementById("gaugeContainer");
-  const tickLayer = document.getElementById("gaugeTicks");
-  tickLayer.innerHTML = "";
-
-  if (!maxProblems) return;
-
-  const total = maxProblems;
-  const width = container.offsetWidth;
-
-  for (let i = 1; i < total; i++) {
-    const tick = document.createElement("div");
-    tick.className = "gauge-tick";
-    const x = (i / total) * width;
-    tick.style.left = `${x}px`;
-    tickLayer.appendChild(tick);
-  }
-}
-
-/* --- ゲージ更新 --- */
+/* ゲージ更新 */
 function updateGauge() {
   if (!maxProblems) return;
 
@@ -307,7 +250,7 @@ function updateGauge() {
   icon.style.transform = `translateX(${x}px)`;
 }
 
-/* --- プリセット適用 --- */
+/* プリセット適用 */
 function applyPreset() {
   const preset = document.getElementById("presetSelect").value;
 
@@ -335,9 +278,10 @@ function applyPreset() {
   renderScoreItems();
 }
 
-/* --- スコア項目の描画 --- */
+/* スコア項目描画 */
 function renderScoreItems() {
   const area = document.getElementById("scoreItemArea");
+  if (!area) return;
   area.innerHTML = "";
 
   scoreItems.forEach(item => {
@@ -348,9 +292,9 @@ function renderScoreItems() {
   });
 }
 
-/* --- プレイヤー追加 --- */
+/* プレイヤー追加 */
 function addPlayer() {
-  const name = document.getElementById("playerNameInput").value.trim();
+  const name = document.getElementById("playerName").value.trim();
   if (!name) return;
 
   const p = {
@@ -365,11 +309,11 @@ function addPlayer() {
   });
 
   players.push(p);
-  document.getElementById("playerNameInput").value = "";
+  document.getElementById("playerName").value = "";
   render();
 }
 
-/* --- スコア変更 --- */
+/* スコア変更 */
 function changeScore(index, itemName, delta) {
   const p = players[index];
   if (!p) return;
@@ -401,7 +345,7 @@ function changeScore(index, itemName, delta) {
   render();
 }
 
-/* --- スルー処理 --- */
+/* スルー */
 function noAnswer() {
   const prevFreeze = players.map(p => p.freezeStop);
 
@@ -419,7 +363,7 @@ function noAnswer() {
   render();
 }
 
-/* --- CSV 読み込み --- */
+/* CSV 読み込み */
 function loadCSV() {
   const input = document.getElementById("csvInput");
   if (!input.files.length) return;
@@ -450,7 +394,7 @@ function loadCSV() {
   reader.readAsText(file, "UTF-8");
 }
 
-/* --- 問題番号に応じて表示更新 --- */
+/* 問題表示更新 */
 function updateQuestionDisplay() {
   const num = problemCount;
 
@@ -466,16 +410,16 @@ function updateQuestionDisplay() {
   document.getElementById("messageWindow").textContent = item.answer;
 }
 
-/* --- Freeze 減衰 --- */
+/* Freeze 減衰 */
 function applyFreezeDecay() {
-  if (getPreset() !== "freeze") return;
+  if (document.getElementById("presetSelect").value !== "freeze") return;
 
   players.forEach(p => {
     if (p.freezeStop > 0) p.freezeStop--;
   });
 }
 
-/* --- 終了判定 --- */
+/* 終了判定 */
 function checkFinish() {
   if (maxProblems && problemCount >= maxProblems) {
     finished = true;
@@ -483,7 +427,7 @@ function checkFinish() {
   }
 }
 
-/* --- Undo --- */
+/* Undo */
 function undo() {
   const last = history.pop();
   if (!last) return;
@@ -514,7 +458,7 @@ function undo() {
   render();
 }
 
-/* --- 合計得点計算 --- */
+/* 合計得点 */
 function calcTotal(player) {
   let total = 0;
   scoreItems.forEach(item => {
@@ -525,7 +469,7 @@ function calcTotal(player) {
   return total;
 }
 
-/* --- ログ描画 --- */
+/* ログ描画 */
 function renderLog() {
   const logDiv = document.getElementById("log");
   logDiv.innerHTML = "";
@@ -538,9 +482,9 @@ function renderLog() {
   });
 }
 
-/* --- プレイヤー描画 --- */
+/* プレイヤー描画 */
 function render() {
-  const area = document.getElementById("playerArea");
+  const area = document.getElementById("players");
   area.innerHTML = "";
 
   players.forEach((p, index) => {
@@ -585,13 +529,12 @@ function render() {
   renderLog();
 }
 
-/* --- ショートカットキー操作 --- */
+/* ショートカット */
 document.addEventListener("keydown", (e) => {
   if (finished) return;
 
   const key = e.key;
 
-  /* ○（正解）: 1〜9 → 1〜9人目、0 → 10人目 */
   if (!e.shiftKey) {
     let index = null;
 
@@ -606,7 +549,6 @@ document.addEventListener("keydown", (e) => {
     }
   }
 
-  /* ×（誤答）: Shift + 数字 */
   if (e.shiftKey) {
     let index = null;
 
@@ -621,17 +563,15 @@ document.addEventListener("keydown", (e) => {
     }
   }
 
-  /* Insert → スルー */
   if (key === "Insert") {
     noAnswer();
   }
 
-  /* Delete → Undo */
   if (key === "Delete") {
     undo();
   }
 });
-
 </script>
+
 </body>
 </html>
