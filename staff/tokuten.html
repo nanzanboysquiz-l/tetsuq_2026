@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v30</title>
+  <title>Score Proto v31</title>
 
   <style>
     body { font-family: sans-serif; margin: 20px; }
@@ -73,20 +73,6 @@
       justify-content: center;
     }
 
-    .player-buttons {
-      display: flex;
-      flex-direction: row;
-      gap: 8px;
-      height: 40px;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .score-btn {
-      font-size: 20px;
-      padding: 4px 10px;
-    }
-
     #log {
       margin-top: 20px;
       font-size: 14px;
@@ -142,7 +128,7 @@
 
 <body>
 
-<h2>Score Proto v30</h2>
+<h2>Score Proto v31</h2>
 
 <div id="topScroll">ここに問題文が表示されます</div>
 <div id="messageWindow">ここに解答が表示されます</div>
@@ -195,7 +181,7 @@
 
 <script>
 /* ============================
-   v30 JavaScript
+   v31 JavaScript
 ============================ */
 
 let players = [];
@@ -275,21 +261,7 @@ function applyPreset() {
     ];
   }
 
-  renderScoreItems();
-}
-
-/* スコア項目描画 */
-function renderScoreItems() {
-  const area = document.getElementById("scoreItemArea");
-  if (!area) return;
-  area.innerHTML = "";
-
-  scoreItems.forEach(item => {
-    const div = document.createElement("div");
-    div.className = "score-item";
-    div.textContent = `${item.name}（重み ${item.weight}）`;
-    area.appendChild(div);
-  });
+  render();
 }
 
 /* プレイヤー追加 */
@@ -313,7 +285,7 @@ function addPlayer() {
   render();
 }
 
-/* スコア変更 */
+/* スコア変更（キーボード専用） */
 function changeScore(index, itemName, delta) {
   const p = players[index];
   if (!p) return;
@@ -334,10 +306,8 @@ function changeScore(index, itemName, delta) {
 
   p.scores[itemName] += delta;
 
-  if (itemName === "誤答") {
-    if (document.getElementById("presetSelect").value === "freeze") {
-      p.freezeStop = 2;
-    }
+  if (itemName === "誤答" && document.getElementById("presetSelect").value === "freeze") {
+    p.freezeStop = 2;
   }
 
   logs.push(`${new Date().toLocaleTimeString()} ${p.name} ${itemName} ${delta > 0 ? "+" : ""}${delta}`);
@@ -403,11 +373,13 @@ function updateQuestionDisplay() {
   if (!item) {
     document.getElementById("topScroll").textContent = "ここに問題文が表示されます";
     document.getElementById("messageWindow").textContent = "ここに解答が表示されます";
-    return;
+  } else {
+    document.getElementById("topScroll").textContent = item.question;
+    document.getElementById("messageWindow").textContent = item.answer;
   }
 
-  document.getElementById("topScroll").textContent = item.question;
-  document.getElementById("messageWindow").textContent = item.answer;
+  document.getElementById("problemCountDisplay").textContent =
+    `問題数: ${problemCount}`;
 }
 
 /* Freeze 減衰 */
@@ -502,39 +474,26 @@ function render() {
 
     const scoreDiv = document.createElement("div");
     scoreDiv.className = "player-score";
-    scoreDiv.textContent = calcTotal(p);
+
+    const total = calcTotal(p);
+    const wrong = p.scores["誤答"] ?? 0;
+    scoreDiv.textContent = `${total} - ${wrong}`;
+
     card.appendChild(scoreDiv);
 
-    const btnArea = document.createElement("div");
-    btnArea.className = "player-buttons";
-
-    scoreItems.forEach(item => {
-      const btn = document.createElement("button");
-      btn.className = "score-btn";
-      btn.textContent = item.name;
-      btn.onclick = () => changeScore(index, item.name, +1);
-      btnArea.appendChild(btn);
-    });
-
-    const wrongBtn = document.createElement("button");
-    wrongBtn.className = "score-btn";
-    wrongBtn.textContent = "誤答";
-    wrongBtn.onclick = () => changeScore(index, "誤答", +1);
-    btnArea.appendChild(wrongBtn);
-
-    card.appendChild(btnArea);
     area.appendChild(card);
   });
 
   renderLog();
 }
 
-/* ショートカット */
+/* キーボード操作（○×ボタン廃止） */
 document.addEventListener("keydown", (e) => {
   if (finished) return;
 
   const key = e.key;
 
+  /* 正解：数字キー（1〜9 → 1〜9人目、0 → 10人目） */
   if (!e.shiftKey) {
     let index = null;
 
@@ -549,6 +508,7 @@ document.addEventListener("keydown", (e) => {
     }
   }
 
+  /* 誤答：Shift + 数字 */
   if (e.shiftKey) {
     let index = null;
 
@@ -563,10 +523,12 @@ document.addEventListener("keydown", (e) => {
     }
   }
 
+  /* Insert → スルー */
   if (key === "Insert") {
     noAnswer();
   }
 
+  /* Delete → Undo */
   if (key === "Delete") {
     undo();
   }
