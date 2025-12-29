@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v16</title>
+  <title>Score Proto v20</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -14,68 +14,57 @@
       gap: 20px;
     }
 
+    /* プレイヤーカード：縦1本 */
     .player {
       border: 1px solid #ccc;
       padding: 15px;
       border-radius: 10px;
       background: #fafafa;
-      width: 260px;
-      height: 260px;
+      width: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .player.out { opacity: 0.4; background: #eee; }
+
+    /* 名前（縦書き・中央寄せ・自動縮小対応） */
+    .player-name {
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      font-weight: 900;
+      line-height: 1.1;
+      max-height: 180px;   /* ←最大高さ */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 状態表示 */
+    .player-status {
+      font-size: 20px;
+      color: #333;
+      height: 28px;
+    }
+
+    /* 得点表示（合計 - 誤答数） */
+    .player-scoreline {
+      font-size: 32px;
+      font-weight: bold;
+    }
+    .player-score-total { color: red; }
+    .player-score-dash  { color: black; }
+    .player-score-wrong { color: blue; }
+
+    /* ボタン横並び（1段扱い） */
+    .player-buttons {
       display: flex;
       flex-direction: row;
       gap: 10px;
     }
-    .player.out { opacity: 0.4; background: #eee; }
-
-    /* 左側：縦書きプレイヤー名 */
-    .player-name {
-      writing-mode: vertical-rl;
-      text-orientation: upright;
-      font-size: 36px;
-      font-weight: 900;
-      line-height: 1.1;
-      border-right: 2px solid #ccc;
-      padding-right: 10px;
-      height: 100%;
-      display: flex;
-      align-items: flex-start;
-    }
-
-    /* 右側：スコア・状態・ボタン */
-    .player-right {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      width: 100%;
-    }
-
-    /* 状態表示欄（Stopなど） */
-    .player-status {
-      height: 28px;
-      font-size: 20px;
-      color: #333;
-      margin-bottom: 6px;
-    }
-
-    /* 合計（数字のみ・大きく赤） */
-    .player-total {
-      font-size: 36px;
-      color: red;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    /* ボタン縦並び */
-    .score-item {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
     .score-btn {
       font-size: 22px;
-      padding: 6px 10px;
+      padding: 6px 14px;
     }
 
     /* ログ */
@@ -145,7 +134,7 @@
 </head>
 <body>
 
-<h2>Score Proto v16</h2>
+<h2>Score Proto v20</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
 
@@ -202,24 +191,25 @@
   let maxProblems = null;
   let finished = false;
 
+  /* 誤答は weight 0 に修正済み */
   const presets = {
     nmarubatsu: {
       items: [
         { name: "正解", weight: 1, label: "○" },
-        { name: "誤答", weight: 1, label: "×" },
+        { name: "誤答", weight: 0, label: "×" },
         { name: "アドバンテージ", weight: 1, label: null }
       ]
     },
     updown: {
       items: [
         { name: "正解", weight: 1, label: "○" },
-        { name: "誤答", weight: 1, label: "×" }
+        { name: "誤答", weight: 0, label: "×" }
       ]
     },
     freeze: {
       items: [
         { name: "正解", weight: 1, label: "○" },
-        { name: "誤答", weight: 1, label: "×" }
+        { name: "誤答", weight: 0, label: "×" }
       ]
     }
   };
@@ -282,6 +272,21 @@
     render();
   }
 
+  /* 名前の自動縮小 */
+  function adjustNameSize(nameDiv) {
+    const maxFont = 36;
+    const maxHeight = 180;
+
+    nameDiv.style.fontSize = maxFont + "px";
+
+    const actual = nameDiv.scrollHeight;
+
+    if (actual > maxHeight) {
+      const scale = maxHeight / actual;
+      nameDiv.style.fontSize = (maxFont * scale) + "px";
+    }
+  }
+
   function render() {
     const container = document.getElementById("players");
     container.innerHTML = "";
@@ -291,20 +296,18 @@
       div.className = "player";
       if (p.status === "out") div.classList.add("out");
 
-      /* 左側：縦書きプレイヤー名 */
+      /* 名前（縦書き・自動縮小） */
       const nameDiv = document.createElement("div");
       nameDiv.className = "player-name";
       nameDiv.textContent = p.name;
       div.appendChild(nameDiv);
 
-      /* 右側：状態・合計・ボタン */
-      const right = document.createElement("div");
-      right.className = "player-right";
+      /* ←ここで縮小処理 */
+      setTimeout(() => adjustNameSize(nameDiv), 0);
 
-      /* 状態表示欄 */
+      /* 状態表示 */
       const statusDiv = document.createElement("div");
       statusDiv.className = "player-status";
-
       if (getPreset() === "freeze" && p.freezeStop > 0) {
         statusDiv.textContent = `Stop ${p.freezeStop}`;
       } else if (p.status === "out") {
@@ -312,36 +315,39 @@
       } else {
         statusDiv.textContent = "";
       }
+      div.appendChild(statusDiv);
 
-      right.appendChild(statusDiv);
+      /* 得点表示：合計 - 誤答数 */
+      const scoreLine = document.createElement("div");
+      scoreLine.className = "player-scoreline";
 
-      /* 合計（数字のみ） */
-      const totalDiv = document.createElement("div");
-      totalDiv.className = "player-total";
-      totalDiv.textContent = calcTotal(p);
-      right.appendChild(totalDiv);
+      const total = calcTotal(p);
+      const wrong = p.scores["誤答"] || 0;
 
-      /* ボタン縦並び */
+      scoreLine.innerHTML = `
+        <span class="player-score-total">${total}</span>
+        <span class="player-score-dash"> - </span>
+        <span class="player-score-wrong">${wrong}</span>
+      `;
+      div.appendChild(scoreLine);
+
+      /* ボタン（横並び） */
+      const btnRow = document.createElement("div");
+      btnRow.className = "player-buttons";
+
       scoreItems.forEach(item => {
-        if (!(item.name in p.scores)) p.scores[item.name] = 0;
+        const btn = document.createElement("button");
+        btn.className = "score-btn";
+        btn.textContent = item.label || "+1";
 
-        const row = document.createElement("div");
-        row.className = "score-item";
+        if (p.freezeStop > 0) btn.style.display = "none";
+        btn.disabled = p.status === "out" || finished;
 
-        const plus = document.createElement("button");
-        plus.className = "score-btn";
-        plus.textContent = item.label || "+1";
-
-        if (p.freezeStop > 0) plus.style.display = "none";
-        plus.disabled = p.status === "out" || finished;
-
-        plus.onclick = () => changeScore(idx, item.name, +1);
-        row.appendChild(plus);
-
-        right.appendChild(row);
+        btn.onclick = () => changeScore(idx, item.name, +1);
+        btnRow.appendChild(btn);
       });
 
-      div.appendChild(right);
+      div.appendChild(btnRow);
       container.appendChild(div);
     });
 
