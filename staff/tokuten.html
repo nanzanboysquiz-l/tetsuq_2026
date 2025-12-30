@@ -516,48 +516,38 @@
     });
   }
   /* --- テンキー操作（v24 機能） --- */
+/* --- キーボード操作（テンキー専用 ○/×） --- */
 document.addEventListener("keydown", (e) => {
   if (finished) return;
 
-  const key = e.code;  // "Numpad1" など
+  const code = e.code;        // "Numpad1" など
+  const isNumpad = code.startsWith("Numpad");
+  if (!isNumpad) return;      // テンキー以外は何もしない
 
-  /* --- 正解：テンキー（Shiftなし） --- */
-  if (!e.shiftKey && key.startsWith("Numpad")) {
-    let index = null;
+  // ここでブラウザのスクロールなどを止める
+  e.preventDefault();
 
-    if (key === "Numpad0") index = 9;
-    else {
-      const num = Number(key.replace("Numpad", ""));
-      if (num >= 1 && num <= 9) index = num - 1;
-    }
-
-    if (index !== null && index < players.length) {
-      const p = players[index];
-      if (p.status !== "out" && p.freezeStop === 0) {
-        e.preventDefault();   // ← 正解時もスクロール防止
-        changeScore(index, "正解", +1);
-      }
-    }
+  // どのプレイヤーか決める
+  let index = null;
+  if (code === "Numpad0") {
+    index = 9;               // 10人目
+  } else {
+    const num = Number(code.replace("Numpad", ""));
+    if (num >= 1 && num <= 9) index = num - 1;
   }
 
-  /* --- 誤答：Shift + テンキー --- */
-  if (e.shiftKey && key.startsWith("Numpad")) {
-    e.preventDefault();   // ← これが最重要（スクロール防止）
+  if (index === null || index >= players.length) return;
 
-    let index = null;
+  const p = players[index];
+  if (p.status === "out" || p.freezeStop > 0) return;
 
-    if (key === "Numpad0") index = 9;
-    else {
-      const num = Number(key.replace("Numpad", ""));
-      if (num >= 1 && num <= 9) index = num - 1;
-    }
-
-    if (index !== null && index < players.length) {
-      const p = players[index];
-      if (p.status !== "out" && p.freezeStop === 0) {
-        changeScore(index, "誤答", +1);
-      }
-    }
+  // Shift の有無で ○ / × を分岐
+  if (e.shiftKey) {
+    // 誤答
+    changeScore(index, "誤答", +1);
+  } else {
+    // 正解
+    changeScore(index, "正解", +1);
   }
 });
 </script>
