@@ -120,6 +120,7 @@
 
     scoreItems = JSON.parse(JSON.stringify(presets[key].items));
     localStorage.setItem("scoreItems", JSON.stringify(scoreItems));
+    localStorage.setItem("currentRule", key);
     alert("ルールプリセットを保存しました");
   }
 
