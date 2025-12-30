@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Score Main v24</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+
+    #players {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .player {
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 10px;
+      background: #fafafa;
+      width: 9vw;
+      height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .player.out { opacity: 0.4; background: #eee; }
+
+    .player-name {
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      font-weight: 900;
+      line-height: 1.1;
+      height: 180px;
+      width: 40px;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      transform-origin: center center;
+    }
+
+    .player-status {
+      font-size: 18px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .player-scoreline {
+      font-size: 28px;
+      font-weight: bold;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .player-score-total { color: red; }
+    .player-score-dash  { color: black; }
+    .player-score-wrong { color: blue; }
+
+    #gaugeWrapper {
+      position: relative;
+      width: 100%;
+      margin-top: 120px;
+      margin-bottom: 20px;
+    }
+
+    #gaugeContainer {
+      width: 100%;
+      height: 20px;
+      background: #ddd;
+      border-radius: 10px;
+      position: relative;
+    }
+
+    #gaugeBar {
+      height: 100%;
+      width: 0%;
+      background: #4caf50;
+      border-radius: 10px;
+      transition: width 0.3s;
+    }
+
+    .gaugeTick {
+      position: absolute;
+      top: -4px;
+      width: 4px;
+      height: 28px;
+      background: #333;
+      border-radius: 2px;
+    }
+
+    #gaugeIcon {
+      position: absolute;
+      top: -110px;
+      width: 98px;
+      height: auto;
+      transition: transform 0.3s;
+      pointer-events: none;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Score Main v24</h2>
+
+<!-- 問題数表示（main に残す） -->
+<h3 id="problemCountDisplay">問題数: 0</h3>
+
+<!-- ゲージ -->
+<div id="gaugeWrapper">
+  <img id="gaugeIcon" src="assets/images/tokuten/kyot10l.png">
+  <div id="gaugeContainer">
+    <div id="gaugeBar"></div>
+  </div>
+</div>
+
+<!-- プレイヤー一覧 -->
+<div id="players"></div>
+
+<!-- 設定画面へのリンク -->
+<div style="margin-top:20px;">
+  <a href="settings.html">設定画面へ</a>
+</div>
+
+<script>
+  /* ====== データ（settings.html から localStorage で受け取る） ====== */
+  let players = JSON.parse(localStorage.getItem("players") || "[]");
+  let scoreItems = JSON.parse(localStorage.getItem("scoreItems") || "[]");
+  let logs = JSON.parse(localStorage.getItem("logs") || "[]");
+  let problemCount = Number(localStorage.getItem("problemCount") || 0);
+  let maxProblems = Number(localStorage.getItem("maxProblems") || 0);
+  let finished = false;
+
+  /* ====== ゲージ描画 ====== */
+  function drawGaugeTicks() {
+    const container = document.getElementById("gaugeContainer");
+    container.querySelectorAll(".gaugeTick").forEach(e => e.remove());
+
+    if (!maxProblems) return;
+
+    for (let i = 5; i <= maxProblems; i += 5) {
+      const tick = document.createElement("div");
+      tick.className = "gaugeTick";
+      const ratio = i / maxProblems;
+      tick.style.left = `calc(${ratio * 100}% - 2px)`;
+      container.appendChild(tick);
+    }
+  }
+
+  function updateGauge() {
+    if (!maxProblems) return;
+
+    const ratio = Math.min(problemCount / maxProblems, 1);
+    const bar = document.getElementById("gaugeBar");
+    bar.style.width = (ratio * 100) + "%";
+
+    const icon = document.getElementById("gaugeIcon");
+    const containerWidth = document.getElementById("gaugeContainer").offsetWidth;
+    const iconWidth = icon.offsetWidth;
+
+    if (problemCount === 0) {
+      icon.style.display = "none";
+      return;
+    } else {
+      icon.style.display = "block";
+    }
+
+    const x = ratio * containerWidth - iconWidth;
+    icon.style.transform = `translateX(${x}px)`;
+  }
+
+  /* ====== プレイヤー描画 ====== */
+  function adjustNameSize(nameDiv) {
+    const maxHeight = 180;
+    nameDiv.style.transform = "scaleY(1)";
+    const actual = nameDiv.scrollHeight;
+
+    if (actual > maxHeight) {
+      const scale = (maxHeight / actual) * 0.85;
+      nameDiv.style.transform = `scaleY(${scale})`;
+    }
+  }
+
+  function calcTotal(player) {
+    let total = 0;
+    scoreItems.forEach(item => {
+      const v = player.scores[item.name];
+      const safe = Number.isFinite(v) ? v : 0;
+      total += safe * item.weight;
+    });
+    return total;
+  }
+
+  function render() {
+    const container = document.getElementById("players");
+    container.innerHTML = "";
+
+    players.forEach((p, idx) => {
+      const div = document.createElement("div");
+      div.className = "player";
+      if (p.status === "out") div.classList.add("out");
+
+      const nameDiv = document.createElement("div");
+      nameDiv.className = "player-name";
+      nameDiv.textContent = p.name;
+      div.appendChild(nameDiv);
+      requestAnimationFrame(() => adjustNameSize(nameDiv));
+
+      const statusDiv = document.createElement("div");
+      statusDiv.className = "player-status";
+      if (p.freezeStop > 0) statusDiv.textContent = `Stop ${p.freezeStop}`;
+      else if (p.status === "out") statusDiv.textContent = "脱落";
+      div.appendChild(statusDiv);
+
+      const scoreLine = document.createElement("div");
+      scoreLine.className = "player-scoreline";
+
+      const total = calcTotal(p);
+      const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
+
+      scoreLine.innerHTML = `
+        <span class="player-score-total">${total}</span>
+        <span class="player-score-dash"> - </span>
+        <span class="player-score-wrong">${wrong}</span>
+      `;
+      div.appendChild(scoreLine);
+
+      container.appendChild(div);
+    });
+
+    document.getElementById("problemCountDisplay").textContent =
+      `問題数: ${problemCount}`;
+  }
+
+  /* ====== キーボード操作 ====== */
+  document.addEventListener("keydown", (e) => {
+    if (finished) return;
+
+    const code = e.code;
+    const isNumpad = code.startsWith("Numpad");
+
+    /* --- テンキー ○/× --- */
+    if (isNumpad) {
+      e.preventDefault();
+
+      let index = null;
+      if (code === "Numpad0") index = 9;
+      else {
+        const num = Number(code.replace("Numpad", ""));
+        if (num >= 1 && num <= 9) index = num - 1;
+      }
+
+      if (index !== null && index < players.length) {
+        const p = players[index];
+        if (p.status !== "out" && p.freezeStop === 0) {
+          if (e.ctrlKey) changeScore(index, "誤答", +1);
+          else changeScore(index, "正解", +1);
+        }
+      }
+      return;
+    }
+
+    /* --- Insert → スルー --- */
+    if (e.code === "Insert") {
+      e.preventDefault();
+      noAnswer();
+      return;
+    }
+
+    /* --- Delete → Undo --- */
+    if (e.code === "Delete") {
+      e.preventDefault();
+      undo();
+      return;
+    }
+  });
+
+  /* ====== スコア処理（settings.html と同じロジック） ====== */
+  function changeScore(playerIndex, itemName, delta) {
+    const p = players[playerIndex];
+
+    if (typeof p.scores[itemName] !== "number") {
+      p.scores[itemName] = 0;
+    }
+
+    p.scores[itemName] += delta;
+
+    problemCount++;
+    updateGauge();
+    render();
+
+    localStorage.setItem("players", JSON.stringify(players));
+    localStorage.setItem("problemCount", problemCount);
+  }
+
+  function noAnswer() {
+    problemCount++;
+    updateGauge();
+    render();
+    localStorage.setItem("problemCount", problemCount);
+  }
+
+  function undo() {
+    if (problemCount > 0) problemCount--;
+    updateGauge();
+    render();
+    localStorage.setItem("problemCount", problemCount);
+  }
+
+  /* 初期描画 */
+  drawGaugeTicks();
+  updateGauge();
+  render();
+</script>
+
+</body>
+</html>
