@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Main v25</title>
+  <title>Score Main v26</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -108,7 +108,7 @@
 
 <body>
 
-<h2>Score Main v25</h2>
+<h2>Score Main v26</h2>
 
 <!-- 問題数表示 -->
 <h3 id="problemCountDisplay">問題数: 0</h3>
@@ -137,9 +137,10 @@
 <!-- プレイヤー一覧 -->
 <div id="players"></div>
 
-<!-- 設定画面へのリンク -->
-<div style="margin-top:20px;">
+<!-- 設定画面・リセット -->
+<div style="margin-top:20px; display:flex; gap:10px; align-items:center;">
   <a href="settings.html">設定画面へ</a>
+  <button onclick="resetAll()">リセット</button>
 </div>
 
 <script>
@@ -152,7 +153,6 @@
   let finished     = false;
   let history      = [];
 
-  /* ルール取得：main では localStorage から読む */
   function getPreset() {
     return localStorage.getItem("currentRule") || "";
   }
@@ -174,7 +174,13 @@
   }
 
   function updateGauge() {
-    if (!maxProblems) return;
+    if (!maxProblems) {
+      const bar = document.getElementById("gaugeBar");
+      bar.style.width = "0%";
+      const icon = document.getElementById("gaugeIcon");
+      icon.style.display = "none";
+      return;
+    }
 
     const ratio = Math.min(problemCount / maxProblems, 1);
     const bar = document.getElementById("gaugeBar");
@@ -221,7 +227,7 @@
     const container = document.getElementById("players");
     container.innerHTML = "";
 
-    players.forEach((p, idx) => {
+    players.forEach((p) => {
       const div = document.createElement("div");
       div.className = "player";
       if (p.status === "out") div.classList.add("out");
@@ -274,7 +280,7 @@
     document.getElementById("cs_now").textContent  = now;
   }
 
-  /* ====== Freeze 減衰 / 終了判定 ====== */
+  /* Freeze 減衰 / 終了判定 */
   function applyFreezeDecay() {
     if (getPreset() !== "freeze") return;
     players.forEach(p => {
@@ -289,7 +295,7 @@
     }
   }
 
-  /* ====== スコア処理（v23.5.5 ロジック復元） ====== */
+  /* ====== スコア処理 ====== */
   function changeScore(playerIndex, itemName, delta) {
     if (finished) return;
 
@@ -315,10 +321,8 @@
 
     logs.push(`${new Date().toLocaleTimeString()} ${p.name} ${itemName} +1`);
 
-    /* スコア加算 */
     p.scores[itemName] += delta;
 
-    /* Up-Down */
     if (preset === "updown" && itemName === "誤答") {
       if (p.scores["誤答"] === 1) {
         if (typeof p.scores["正解"] !== "number") p.scores["正解"] = 0;
@@ -329,7 +333,6 @@
       }
     }
 
-    /* Freeze：誤答数加算後に Stop をセットし、この問題では減衰しない */
     if (preset === "freeze" && itemName === "誤答") {
       p.freezeStop = p.scores["誤答"];
       skipFreezeDecay = true;
@@ -348,6 +351,7 @@
     localStorage.setItem("players", JSON.stringify(players));
     localStorage.setItem("problemCount", problemCount);
     localStorage.setItem("logs", JSON.stringify(logs));
+    updateCurrentSettings();
   }
 
   function noAnswer() {
@@ -369,6 +373,7 @@
 
     localStorage.setItem("problemCount", problemCount);
     localStorage.setItem("logs", JSON.stringify(logs));
+    updateCurrentSettings();
   }
 
   function undo() {
@@ -402,6 +407,34 @@
     localStorage.setItem("players", JSON.stringify(players));
     localStorage.setItem("problemCount", problemCount);
     localStorage.setItem("logs", JSON.stringify(logs));
+    updateCurrentSettings();
+  }
+
+  /* ★ 全体リセット ★ */
+  function resetAll() {
+    const ok = window.confirm(
+      "スコア・状態・Stop・問題数・ログをすべてリセットします。\nよろしいですか？"
+    );
+    if (!ok) return;
+
+    players.forEach(p => {
+      p.scores = {};
+      p.status = "alive";
+      p.freezeStop = 0;
+    });
+
+    history = [];
+    logs = [];
+    problemCount = 0;
+    finished = false;
+
+    localStorage.setItem("players", JSON.stringify(players));
+    localStorage.setItem("problemCount", problemCount);
+    localStorage.setItem("logs", JSON.stringify(logs));
+
+    updateGauge();
+    render();
+    updateCurrentSettings();
   }
 
   /* ====== キーボード操作 ====== */
@@ -411,7 +444,6 @@
     const code = e.code;
     const isNumpad = code.startsWith("Numpad");
 
-    /* --- テンキー ○/× --- */
     if (isNumpad) {
       e.preventDefault();
 
@@ -432,14 +464,12 @@
       return;
     }
 
-    /* --- Insert → スルー --- */
     if (e.code === "Insert") {
       e.preventDefault();
       noAnswer();
       return;
     }
 
-    /* --- Delete → Undo --- */
     if (e.code === "Delete") {
       e.preventDefault();
       undo();
@@ -447,7 +477,7 @@
     }
   });
 
-  /* ====== localStorage 変更監視（settings → main） ====== */
+  /* localStorage 変更監視（settings → main） */
   window.addEventListener("storage", () => {
     players      = JSON.parse(localStorage.getItem("players")      || "[]");
     scoreItems   = JSON.parse(localStorage.getItem("scoreItems")   || "[]");
