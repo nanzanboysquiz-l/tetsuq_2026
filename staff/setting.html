@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Settings v1</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+
+    #log {
+      margin-top: 20px;
+      font-size: 14px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 6px;
+      border-radius: 6px;
+      background: #fdfdfd;
+    }
+    .log-item {
+      padding: 4px 6px;
+      margin-bottom: 4px;
+      background: #f3f3f3;
+      border-left: 4px solid #888;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>設定画面（Settings v1）</h2>
+
+<!-- 戻る -->
+<div style="margin-bottom:20px;">
+  <a href="main.html">← メイン画面へ戻る</a>
+</div>
+
+<hr>
+
+<!-- 限定問題数 -->
+<h3>限定問題数</h3>
+<div>
+  <input id="maxProblems" type="number" placeholder="限定問題数" style="width:120px">
+  <button onclick="saveMaxProblems()">設定</button>
+</div>
+
+<hr>
+
+<!-- ルールプリセット -->
+<h3>ルールプリセット</h3>
+<div>
+  <select id="presetSelect">
+    <option value="">ルールプリセットを選択</option>
+    <option value="nmarubatsu">n○m×</option>
+    <option value="updown">Up-Down</option>
+    <option value="freeze">Freeze</option>
+  </select>
+  <button onclick="applyPreset()">適用</button>
+</div>
+
+<hr>
+
+<!-- プレイヤー追加 -->
+<h3>プレイヤー追加</h3>
+<div>
+  <input id="playerName" placeholder="プレイヤー名">
+  <button onclick="addPlayer()">追加</button>
+</div>
+
+<hr>
+
+<!-- Log -->
+<h3>Log</h3>
+<div id="log"></div>
+
+<script>
+  /* ====== localStorage からデータ取得 ====== */
+  let players = JSON.parse(localStorage.getItem("players") || "[]");
+  let scoreItems = JSON.parse(localStorage.getItem("scoreItems") || "[]");
+  let logs = JSON.parse(localStorage.getItem("logs") || "[]");
+  let maxProblems = Number(localStorage.getItem("maxProblems") || 0);
+
+  /* ====== プリセット定義（v23.5.5 と同じ） ====== */
+  const presets = {
+    nmarubatsu: {
+      items: [
+        { name: "正解", weight: 1 },
+        { name: "誤答", weight: 0 },
+        { name: "アドバンテージ", weight: 1 }
+      ]
+    },
+    updown: {
+      items: [
+        { name: "正解", weight: 1 },
+        { name: "誤答", weight: 0 }
+      ]
+    },
+    freeze: {
+      items: [
+        { name: "正解", weight: 1 },
+        { name: "誤答", weight: 0 }
+      ]
+    }
+  };
+
+  /* ====== 限定問題数設定 ====== */
+  function saveMaxProblems() {
+    const v = Number(document.getElementById("maxProblems").value);
+    if (!v || v <= 0) return;
+
+    maxProblems = v;
+    localStorage.setItem("maxProblems", maxProblems);
+    alert("限定問題数を保存しました");
+  }
+
+  /* ====== プリセット適用 ====== */
+  function applyPreset() {
+    const key = document.getElementById("presetSelect").value;
+    if (!key) return;
+
+    scoreItems = JSON.parse(JSON.stringify(presets[key].items));
+    localStorage.setItem("scoreItems", JSON.stringify(scoreItems));
+    alert("ルールプリセットを保存しました");
+  }
+
+  /* ====== プレイヤー追加 ====== */
+  function addPlayer() {
+    const name = document.getElementById("playerName").value.trim();
+    if (!name) return;
+
+    players.push({
+      name,
+      scores: {},
+      status: "alive",
+      freezeStop: 0
+    });
+
+    localStorage.setItem("players", JSON.stringify(players));
+    document.getElementById("playerName").value = "";
+    alert("プレイヤーを追加しました");
+  }
+
+  /* ====== Log 表示 ====== */
+  function renderLog() {
+    const logDiv = document.getElementById("log");
+    logDiv.innerHTML = "";
+
+    logs.slice(-300).forEach(line => {
+      const div = document.createElement("div");
+      div.className = "log-item";
+      div.textContent = line;
+      logDiv.appendChild(div);
+    });
+  }
+
+  renderLog();
+</script>
+
+</body>
+</html>
