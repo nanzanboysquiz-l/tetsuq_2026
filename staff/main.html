@@ -120,7 +120,18 @@
     <div id="gaugeBar"></div>
   </div>
 </div>
-
+<!-- 現在の設定表示 -->
+<div id="currentSettings" style="
+  border:1px solid #ccc;
+  padding:10px;
+  margin-bottom:20px;
+  background:#f7f7f7;
+  width:300px;
+">
+  <div>ルール：<span id="cs_rule">---</span></div>
+  <div>限定問題数：<span id="cs_max">---</span></div>
+  <div>現在：<span id="cs_now">0</span> 問</div>
+</div>
 <!-- プレイヤー一覧 -->
 <div id="players"></div>
 
@@ -318,6 +329,21 @@
   drawGaugeTicks();
   updateGauge();
   render();
+  updateCurrentSettings();
+
+  window.addEventListener("storage", () => {
+  updateCurrentSettings();
+});
+  function updateCurrentSettings() {
+  const rule = localStorage.getItem("currentRule") || "---";
+  const max = localStorage.getItem("maxProblems") || "---";
+  const now = localStorage.getItem("problemCount") || 0;
+
+  document.getElementById("cs_rule").textContent = rule;
+  document.getElementById("cs_max").textContent = max;
+  document.getElementById("cs_now").textContent = now;
+}
+  
 </script>
 
 </body>
