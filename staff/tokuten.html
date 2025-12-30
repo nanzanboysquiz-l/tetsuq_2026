@@ -290,7 +290,7 @@
     const actual = nameDiv.scrollHeight;
 
     if (actual > maxHeight) {
-      const scale = maxHeight / actual;
+      const scale = (maxHeight / actual)*0.85;
       nameDiv.style.transform = `scaleY(${scale})`;
     }
   }
@@ -515,6 +515,48 @@
       logDiv.appendChild(div);
     });
   }
+  /* --- テンキー操作（v24 機能） --- */
+document.addEventListener("keydown", (e) => {
+  if (finished) return;
+
+  const key = e.code;  // "Numpad1" など
+
+  // 正解：テンキー（Shiftなし）
+  if (!e.shiftKey && key.startsWith("Numpad")) {
+    let index = null;
+
+    if (key === "Numpad0") index = 9;
+    else {
+      const num = Number(key.replace("Numpad", ""));
+      if (num >= 1 && num <= 9) index = num - 1;
+    }
+
+    if (index !== null && index < players.length) {
+      const p = players[index];
+      if (p.status !== "out" && p.freezeStop === 0) {
+        changeScore(index, "正解", +1);
+      }
+    }
+  }
+
+  // 誤答：Shift + テンキー
+  if (e.shiftKey && key.startsWith("Numpad")) {
+    let index = null;
+
+    if (key === "Numpad0") index = 9;
+    else {
+      const num = Number(key.replace("Numpad", ""));
+      if (num >= 1 && num <= 9) index = num - 1;
+    }
+
+    if (index !== null && index < players.length) {
+      const p = players[index];
+      if (p.status !== "out" && p.freezeStop === 0) {
+        changeScore(index, "誤答", +1);
+      }
+    }
+  }
+});
 </script>
 
 </body>
