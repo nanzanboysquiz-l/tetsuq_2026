@@ -325,6 +325,16 @@
     localStorage.setItem("problemCount", problemCount);
   }
 
+  function updateCurrentSettings() {
+    const rule = localStorage.getItem("currentRule") || "---";
+    const max = localStorage.getItem("maxProblems") || "---";
+    const now = localStorage.getItem("problemCount") || 0;
+
+    document.getElementById("cs_rule").textContent = rule;
+    document.getElementById("cs_max").textContent = max;
+    document.getElementById("cs_now").textContent = now;
+  }
+
   /* 初期描画 */
   drawGaugeTicks();
   updateGauge();
@@ -334,15 +344,7 @@
   window.addEventListener("storage", () => {
   updateCurrentSettings();
 });
-  function updateCurrentSettings() {
-  const rule = localStorage.getItem("currentRule") || "---";
-  const max = localStorage.getItem("maxProblems") || "---";
-  const now = localStorage.getItem("problemCount") || 0;
 
-  document.getElementById("cs_rule").textContent = rule;
-  document.getElementById("cs_max").textContent = max;
-  document.getElementById("cs_now").textContent = now;
-}
   
 </script>
 
