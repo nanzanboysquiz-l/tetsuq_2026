@@ -521,7 +521,7 @@ document.addEventListener("keydown", (e) => {
 
   const key = e.code;  // "Numpad1" など
 
-  // 正解：テンキー（Shiftなし）
+  /* --- 正解：テンキー（Shiftなし） --- */
   if (!e.shiftKey && key.startsWith("Numpad")) {
     let index = null;
 
@@ -534,13 +534,16 @@ document.addEventListener("keydown", (e) => {
     if (index !== null && index < players.length) {
       const p = players[index];
       if (p.status !== "out" && p.freezeStop === 0) {
+        e.preventDefault();   // ← 正解時もスクロール防止
         changeScore(index, "正解", +1);
       }
     }
   }
 
-  // 誤答：Shift + テンキー
+  /* --- 誤答：Shift + テンキー --- */
   if (e.shiftKey && key.startsWith("Numpad")) {
+    e.preventDefault();   // ← これが最重要（スクロール防止）
+
     let index = null;
 
     if (key === "Numpad0") index = 9;
