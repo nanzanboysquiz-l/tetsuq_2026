@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v23.5.3</title>
+  <title>Score Proto v23.5.4</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -515,60 +515,38 @@
       logDiv.appendChild(div);
     });
   }
-  /* --- テンキー操作（v24 機能） --- */
+/* --- キーボード操作（テンキー専用 ○/×） --- */
 document.addEventListener("keydown", (e) => {
   if (finished) return;
 
-  const code = e.code;
+  const code = e.code;        // "Numpad1" など
+  const isNumpad = code.startsWith("Numpad");
+  if (!isNumpad) return;      // テンキー以外は無視
 
-  // --- Shiftなし（正解） ---
-  if (code.startsWith("Numpad") && !e.shiftKey) {
-    e.preventDefault();
+  // ブラウザのスクロールなどを止める
+  e.preventDefault();
 
-    let index = null;
-    if (code === "Numpad0") index = 9;
-    else {
-      const num = Number(code.replace("Numpad", ""));
-      if (num >= 1 && num <= 9) index = num - 1;
-    }
-
-    if (index !== null && index < players.length) {
-      const p = players[index];
-      if (p.status !== "out" && p.freezeStop === 0) {
-        changeScore(index, "正解", +1);
-      }
-    }
-    return;
+  // プレイヤー番号を決定
+  let index = null;
+  if (code === "Numpad0") {
+    index = 9;               // 10人目
+  } else {
+    const num = Number(code.replace("Numpad", ""));
+    if (num >= 1 && num <= 9) index = num - 1;
   }
 
-  // --- Shiftあり（誤答） ---
-  // Shift＋テンキーは code が Numpad ではなくなる
-  const shiftedNumpadMap = {
-    "End": 1,
-    "ArrowDown": 2,
-    "PageDown": 3,
-    "ArrowLeft": 4,
-    "Numpad5": 5, // 5だけ変化しない
-    "ArrowRight": 6,
-    "Home": 7,
-    "ArrowUp": 8,
-    "PageUp": 9,
-    "Insert": 0
-  };
+  if (index === null || index >= players.length) return;
 
-  if (shiftedNumpadMap.hasOwnProperty(code)) {
-    e.preventDefault();
+  const p = players[index];
+  if (p.status === "out" || p.freezeStop > 0) return;
 
-    let index = shiftedNumpadMap[code];
-    if (index === 0) index = 9;
-    else index = index - 1;
-
-    if (index < players.length) {
-      const p = players[index];
-      if (p.status !== "out" && p.freezeStop === 0) {
-        changeScore(index, "誤答", +1);
-      }
-    }
+  // Ctrl の有無で ○ / × を分岐
+  if (e.ctrlKey) {
+    // 誤答
+    changeScore(index, "誤答", +1);
+  } else {
+    // 正解
+    changeScore(index, "正解", +1);
   }
 });
 </script>
