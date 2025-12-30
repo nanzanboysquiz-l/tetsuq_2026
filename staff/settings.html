@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Settings v1</title>
+  <title>Settings v2</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -23,32 +23,33 @@
       border-left: 4px solid #888;
       border-radius: 4px;
     }
+
+    .block {
+      margin-bottom: 25px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+    }
   </style>
 </head>
 
 <body>
 
-<h2>設定画面（Settings v1）</h2>
+<h2>設定画面（Settings v2）</h2>
 
-<!-- 戻る -->
 <div style="margin-bottom:20px;">
   <a href="main.html">← メイン画面へ戻る</a>
 </div>
 
-<hr>
-
 <!-- 限定問題数 -->
-<h3>限定問題数</h3>
-<div>
+<div class="block">
+  <h3>限定問題数</h3>
   <input id="maxProblems" type="number" placeholder="限定問題数" style="width:120px">
   <button onclick="saveMaxProblems()">設定</button>
 </div>
 
-<hr>
-
 <!-- ルールプリセット -->
-<h3>ルールプリセット</h3>
-<div>
+<div class="block">
+  <h3>ルールプリセット</h3>
   <select id="presetSelect">
     <option value="">ルールプリセットを選択</option>
     <option value="nmarubatsu">n○m×</option>
@@ -58,58 +59,89 @@
   <button onclick="applyPreset()">適用</button>
 </div>
 
-<hr>
+<!-- 勝ち抜け・脱落設定 -->
+<div class="block">
+  <h3>勝ち抜け・脱落設定</h3>
+
+  <div>
+    勝ち抜け点：
+    <input id="winScore" type="number" style="width:80px">
+  </div>
+
+  <div>
+    勝ち抜け人数：
+    <input id="winCount" type="number" style="width:80px">
+  </div>
+
+  <div>
+    脱落誤答数：
+    <input id="loseWrong" type="number" style="width:80px">
+  </div>
+
+  <button onclick="saveWinLoseSettings()">保存</button>
+</div>
 
 <!-- プレイヤー追加 -->
-<h3>プレイヤー追加</h3>
-<div>
+<div class="block">
+  <h3>プレイヤー追加</h3>
   <input id="playerName" placeholder="プレイヤー名">
   <button onclick="addPlayer()">追加</button>
 </div>
 
-<hr>
-
 <!-- Log -->
-<h3>Log</h3>
-<div id="log"></div>
+<div class="block">
+  <h3>Log</h3>
+  <div id="log"></div>
+</div>
 
 <script>
-  /* ====== localStorage からデータ取得 ====== */
-  let players = JSON.parse(localStorage.getItem("players") || "[]");
+  /* ====== localStorage 読み込み ====== */
+  let players    = JSON.parse(localStorage.getItem("players") || "[]");
   let scoreItems = JSON.parse(localStorage.getItem("scoreItems") || "[]");
-  let logs = JSON.parse(localStorage.getItem("logs") || "[]");
-  let maxProblems = Number(localStorage.getItem("maxProblems") || 0);
+  let logs       = JSON.parse(localStorage.getItem("logs") || "[]");
 
-  /* ====== プリセット定義（v23.5.5 と同じ） ====== */
+  let winScore  = Number(localStorage.getItem("winScore")  || 0);
+  let winCount  = Number(localStorage.getItem("winCount")  || 0);
+  let loseWrong = Number(localStorage.getItem("loseWrong") || 0);
+
+  /* ====== プリセット定義 ====== */
   const presets = {
     nmarubatsu: {
       items: [
         { name: "正解", weight: 1 },
         { name: "誤答", weight: 0 },
         { name: "アドバンテージ", weight: 1 }
-      ]
+      ],
+      winScore: 5,
+      winCount: 3,
+      loseWrong: 3
     },
     updown: {
       items: [
         { name: "正解", weight: 1 },
         { name: "誤答", weight: 0 }
-      ]
+      ],
+      winScore: 5,
+      winCount: 2,
+      loseWrong: 2
     },
     freeze: {
       items: [
         { name: "正解", weight: 1 },
         { name: "誤答", weight: 0 }
-      ]
+      ],
+      winScore: 5,
+      winCount: 3,
+      loseWrong: 3
     }
   };
 
-  /* ====== 限定問題数設定 ====== */
+  /* ====== 限定問題数 ====== */
   function saveMaxProblems() {
     const v = Number(document.getElementById("maxProblems").value);
     if (!v || v <= 0) return;
 
-    maxProblems = v;
-    localStorage.setItem("maxProblems", maxProblems);
+    localStorage.setItem("maxProblems", v);
     alert("限定問題数を保存しました");
   }
 
@@ -118,10 +150,31 @@
     const key = document.getElementById("presetSelect").value;
     if (!key) return;
 
-    scoreItems = JSON.parse(JSON.stringify(presets[key].items));
+    const p = presets[key];
+
+    scoreItems = JSON.parse(JSON.stringify(p.items));
     localStorage.setItem("scoreItems", JSON.stringify(scoreItems));
+
     localStorage.setItem("currentRule", key);
-    alert("ルールプリセットを保存しました");
+
+    localStorage.setItem("winScore",  p.winScore);
+    localStorage.setItem("winCount",  p.winCount);
+    localStorage.setItem("loseWrong", p.loseWrong);
+
+    alert("ルールプリセットを適用しました");
+  }
+
+  /* ====== 勝ち抜け・脱落設定保存 ====== */
+  function saveWinLoseSettings() {
+    const ws = Number(document.getElementById("winScore").value);
+    const wc = Number(document.getElementById("winCount").value);
+    const lw = Number(document.getElementById("loseWrong").value);
+
+    if (ws > 0) localStorage.setItem("winScore", ws);
+    if (wc > 0) localStorage.setItem("winCount", wc);
+    if (lw > 0) localStorage.setItem("loseWrong", lw);
+
+    alert("勝ち抜け・脱落設定を保存しました");
   }
 
   /* ====== プレイヤー追加 ====== */
@@ -154,6 +207,14 @@
     });
   }
 
+  /* ====== 初期値をフォームに反映 ====== */
+  function loadInitialValues() {
+    document.getElementById("winScore").value  = winScore;
+    document.getElementById("winCount").value  = winCount;
+    document.getElementById("loseWrong").value = loseWrong;
+  }
+
+  loadInitialValues();
   renderLog();
 </script>
 
