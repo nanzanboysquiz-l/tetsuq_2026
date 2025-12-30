@@ -2,33 +2,11 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Proto v31</title>
-
+  <title>Score Proto v23</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
-    #topScroll {
-      background: black;
-      color: white;
-      height: 24px;
-      overflow-x: auto;
-      white-space: nowrap;
-      padding: 4px 8px;
-      width: calc(100% - 40px);
-      margin-bottom: 6px;
-    }
-
-    #messageWindow {
-      background: black;
-      color: white;
-      height: 32px;
-      padding: 6px 8px;
-      display: flex;
-      align-items: center;
-      width: calc(100% - 40px);
-      margin-bottom: 10px;
-    }
-
+    /* プレイヤー一覧（横並び） */
     #players {
       display: flex;
       flex-direction: row;
@@ -36,7 +14,8 @@
       gap: 10px;
     }
 
-    .player-card {
+    /* プレイヤーカード：幅固定（10人並ぶ）、高さ固定 */
+    .player {
       border: 1px solid #ccc;
       padding: 10px;
       border-radius: 10px;
@@ -48,23 +27,35 @@
       align-items: center;
       gap: 10px;
     }
-    .player-out { opacity: 0.4; background: #eee; }
+    .player.out { opacity: 0.4; background: #eee; }
 
+    /* 名前欄（縦書き・中央寄せ・折り返し禁止・高さ固定） */
     .player-name {
       writing-mode: vertical-rl;
       text-orientation: upright;
       font-weight: 900;
       line-height: 1.1;
-      height: 180px;
-      width: 40px;
-      white-space: nowrap;
+      height: 180px;          /* 完全固定 */
+      width: 40px;            /* 折り返し防止の固定幅 */
+      white-space: nowrap;    /* 折り返し禁止 */
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 36px;
+      font-size: 36px;        /* 最大フォントサイズ */
+      transform-origin: center center; /* scaleY 用 */
     }
 
-    .player-score {
+    /* 状態表示（固定高さ） */
+    .player-status {
+      font-size: 18px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 得点表示（合計 - 誤答数） */
+    .player-scoreline {
       font-size: 28px;
       font-weight: bold;
       height: 40px;
@@ -72,7 +63,25 @@
       align-items: center;
       justify-content: center;
     }
+    .player-score-total { color: red; }
+    .player-score-dash  { color: black; }
+    .player-score-wrong { color: blue; }
 
+    /* ボタン（横並び・固定高さ） */
+    .player-buttons {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      height: 40px;
+      align-items: center;
+      justify-content: center;
+    }
+    .score-btn {
+      font-size: 20px;
+      padding: 4px 10px;
+    }
+
+    /* ログ */
     #log {
       margin-top: 20px;
       font-size: 14px;
@@ -91,6 +100,7 @@
       border-radius: 4px;
     }
 
+    /* ゲージ全体（画像の高さを考慮して下げる） */
     #gaugeWrapper {
       position: relative;
       width: 100%;
@@ -114,6 +124,17 @@
       transition: width 0.3s;
     }
 
+    /* 節（5問ごと） */
+    .gaugeTick {
+      position: absolute;
+      top: -4px;
+      width: 4px;
+      height: 28px;
+      background: #333;
+      border-radius: 2px;
+    }
+
+    /* 画像（ゲージ上を移動） */
     #gaugeIcon {
       position: absolute;
       top: -110px;
@@ -125,26 +146,19 @@
     }
   </style>
 </head>
-
 <body>
 
-<h2>Score Proto v31</h2>
-
-<div id="topScroll">ここに問題文が表示されます</div>
-<div id="messageWindow">ここに解答が表示されます</div>
-
-<div style="margin-bottom: 20px;">
-  <input type="file" id="csvInput" accept=".csv">
-  <button onclick="loadCSV()">CSV読み込み</button>
-</div>
+<h2>Score Proto v23</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
 
+<!-- 限定問題数 -->
 <div>
   <input id="maxProblems" type="number" placeholder="限定問題数" style="width:120px">
   <button onclick="setMaxProblems()">設定</button>
 </div>
 
+<!-- ゲージ（節 + 画像） -->
 <div id="gaugeWrapper">
   <img id="gaugeIcon" src="assets/images/tokuten/kyot10l.png">
   <div id="gaugeContainer">
@@ -152,6 +166,7 @@
   </div>
 </div>
 
+<!-- ルールプリセット -->
 <div>
   <select id="presetSelect">
     <option value="">ルールプリセットを選択</option>
@@ -162,11 +177,13 @@
   <button onclick="applyPreset()">適用</button>
 </div>
 
+<!-- プレイヤー追加 -->
 <div>
   <input id="playerName" placeholder="プレイヤー名">
   <button onclick="addPlayer()">追加</button>
 </div>
 
+<!-- 問題数操作 -->
 <div>
   <button onclick="noAnswer()">スルー（無回答）</button>
   <button onclick="undo()">Undo</button>
@@ -180,359 +197,324 @@
 <div id="log"></div>
 
 <script>
-/* ============================
-   v31 JavaScript
-============================ */
+  let players = [];
+  let scoreItems = [];
+  let history = [];
+  let logs = [];
+  let problemCount = 0;
+  let maxProblems = null;
+  let finished = false;
 
-let players = [];
-let scoreItems = [];
-let history = [];
-let logs = [];
-let problemCount = 0;
-let maxProblems = null;
-let finished = false;
-
-let questionData = [];
-
-/* 限定問題数設定 */
-function setMaxProblems() {
-  const input = document.getElementById("maxProblems").value.trim();
-  if (!input) {
-    maxProblems = null;
-    updateGauge();
-    return;
-  }
-
-  const n = Number(input);
-  if (!Number.isFinite(n) || n <= 0) {
-    alert("正しい問題数を入力してください");
-    return;
-  }
-
-  maxProblems = n;
-  updateGauge();
-}
-
-/* ゲージ更新 */
-function updateGauge() {
-  if (!maxProblems) return;
-
-  const ratio = Math.min(problemCount / maxProblems, 1);
-  const bar = document.getElementById("gaugeBar");
-  bar.style.width = (ratio * 100) + "%";
-
-  const icon = document.getElementById("gaugeIcon");
-  const containerWidth = document.getElementById("gaugeContainer").offsetWidth;
-  const iconWidth = icon.offsetWidth;
-
-  if (problemCount === 0) {
-    icon.style.display = "none";
-    return;
-  } else {
-    icon.style.display = "block";
-  }
-
-  const x = ratio * containerWidth - iconWidth;
-  icon.style.transform = `translateX(${x}px)`;
-}
-
-/* プリセット適用 */
-function applyPreset() {
-  const preset = document.getElementById("presetSelect").value;
-
-  if (preset === "nmarubatsu") {
-    scoreItems = [
-      { name: "正解", weight: +1 },
-      { name: "誤答", weight: -1 }
-    ];
-  }
-
-  if (preset === "updown") {
-    scoreItems = [
-      { name: "正解", weight: +1 },
-      { name: "誤答", weight: -1 }
-    ];
-  }
-
-  if (preset === "freeze") {
-    scoreItems = [
-      { name: "正解", weight: +1 },
-      { name: "誤答", weight: 0 }
-    ];
-  }
-
-  render();
-}
-
-/* プレイヤー追加 */
-function addPlayer() {
-  const name = document.getElementById("playerName").value.trim();
-  if (!name) return;
-
-  const p = {
-    name,
-    scores: {},
-    status: "in",
-    freezeStop: 0
+  const presets = {
+    nmarubatsu: {
+      items: [
+        { name: "正解", weight: 1, label: "○" },
+        { name: "誤答", weight: 0, label: "×" },
+        { name: "アドバンテージ", weight: 1, label: null }
+      ]
+    },
+    updown: {
+      items: [
+        { name: "正解", weight: 1, label: "○" },
+        { name: "誤答", weight: 0, label: "×" }
+      ]
+    },
+    freeze: {
+      items: [
+        { name: "正解", weight: 1, label: "○" },
+        { name: "誤答", weight: 0, label: "×" }
+      ]
+    }
   };
 
-  scoreItems.forEach(item => {
-    p.scores[item.name] = 0;
-  });
-
-  players.push(p);
-  document.getElementById("playerName").value = "";
-  render();
-}
-
-/* スコア変更（キーボード専用） */
-function changeScore(index, itemName, delta) {
-  const p = players[index];
-  if (!p) return;
-
-  const prevScores = structuredClone(p.scores);
-  const prevStatus = p.status;
-  const prevFreeze = p.freezeStop;
-
-  history.push({
-    type: "score",
-    playerIndex: index,
-    itemName,
-    prevScores,
-    prevStatus,
-    prevFreeze,
-    problemDelta: 0
-  });
-
-  p.scores[itemName] += delta;
-
-  if (itemName === "誤答" && document.getElementById("presetSelect").value === "freeze") {
-    p.freezeStop = 2;
+  function getPreset() {
+    return document.getElementById("presetSelect").value;
   }
 
-  logs.push(`${new Date().toLocaleTimeString()} ${p.name} ${itemName} ${delta > 0 ? "+" : ""}${delta}`);
+  function setMaxProblems() {
+    maxProblems = parseInt(document.getElementById("maxProblems").value);
+    drawGaugeTicks();
+    updateGauge();
+  }
 
-  render();
-}
+  function drawGaugeTicks() {
+    const container = document.getElementById("gaugeContainer");
+    container.querySelectorAll(".gaugeTick").forEach(e => e.remove());
 
-/* スルー */
-function noAnswer() {
-  const prevFreeze = players.map(p => p.freezeStop);
+    if (!maxProblems) return;
 
-  history.push({
-    type: "noAnswer",
-    prevFreeze,
-    problemDelta: +1
-  });
+    for (let i = 5; i <= maxProblems; i += 5) {
+      const tick = document.createElement("div");
+      tick.className = "gaugeTick";
+      const ratio = i / maxProblems;
+      tick.style.left = `calc(${ratio * 100}% - 2px)`;
+      container.appendChild(tick);
+    }
+  }
 
-  problemCount++;
-  updateQuestionDisplay();
-  updateGauge();
+  function updateGauge() {
+    if (!maxProblems) return;
 
-  logs.push(`${new Date().toLocaleTimeString()} スルー`);
-  render();
-}
+    const ratio = Math.min(problemCount / maxProblems, 1);
+    const bar = document.getElementById("gaugeBar");
+    bar.style.width = (ratio * 100) + "%";
 
-/* CSV 読み込み */
-function loadCSV() {
-  const input = document.getElementById("csvInput");
-  if (!input.files.length) return;
+    const icon = document.getElementById("gaugeIcon");
+    const containerWidth = document.getElementById("gaugeContainer").offsetWidth;
+    const iconWidth = icon.offsetWidth;
 
-  const file = input.files[0];
-  const reader = new FileReader();
-
-  reader.onload = function(e) {
-    const text = e.target.result;
-    const lines = text.split(/\r?\n/);
-
-    questionData = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue;
-      const cols = lines[i].split(",");
-
-      questionData.push({
-        number: cols[0],
-        question: cols[1],
-        answer: cols[2]
-      });
+    if (problemCount === 0) {
+      icon.style.display = "none";
+      return;
+    } else {
+      icon.style.display = "block";
     }
 
-    updateQuestionDisplay();
-  };
-
-  reader.readAsText(file, "UTF-8");
-}
-
-/* 問題表示更新 */
-function updateQuestionDisplay() {
-  const num = problemCount;
-
-  const item = questionData.find(q => q.number == num);
-
-  if (!item) {
-    document.getElementById("topScroll").textContent = "ここに問題文が表示されます";
-    document.getElementById("messageWindow").textContent = "ここに解答が表示されます";
-  } else {
-    document.getElementById("topScroll").textContent = item.question;
-    document.getElementById("messageWindow").textContent = item.answer;
+    const x = ratio * containerWidth - iconWidth;
+    icon.style.transform = `translateX(${x}px)`;
   }
 
-  document.getElementById("problemCountDisplay").textContent =
-    `問題数: ${problemCount}`;
-}
+  function applyPreset() {
+    const key = getPreset();
+    if (!key) return;
 
-/* Freeze 減衰 */
-function applyFreezeDecay() {
-  if (document.getElementById("presetSelect").value !== "freeze") return;
-
-  players.forEach(p => {
-    if (p.freezeStop > 0) p.freezeStop--;
-  });
-}
-
-/* 終了判定 */
-function checkFinish() {
-  if (maxProblems && problemCount >= maxProblems) {
-    finished = true;
-    logs.push(`${new Date().toLocaleTimeString()} ★終了★`);
-  }
-}
-
-/* Undo */
-function undo() {
-  const last = history.pop();
-  if (!last) return;
-
-  if (last.type === "score") {
-    const p = players[last.playerIndex];
-    p.scores = last.prevScores;
-    p.status = last.prevStatus;
-    p.freezeStop = last.prevFreeze;
-
-    logs.push(`${new Date().toLocaleTimeString()} Undo: ${p.name} ${last.itemName}`);
+    scoreItems = JSON.parse(JSON.stringify(presets[key].items));
+    render();
   }
 
-  if (last.type === "noAnswer") {
-    logs.push(`${new Date().toLocaleTimeString()} Undo: スルー取消`);
-    players.forEach((p, i) => {
-      p.freezeStop = last.prevFreeze[i];
+  /* 名前の自動縮小（縦方向のみ scaleY） */
+  function adjustNameSize(nameDiv) {
+    const maxHeight = 180;
+
+    nameDiv.style.transform = "scaleY(1)";
+    const actual = nameDiv.scrollHeight;
+
+    if (actual > maxHeight) {
+      const scale = maxHeight / actual;
+      nameDiv.style.transform = `scaleY(${scale})`;
+    }
+  }
+
+  function render() {
+    const container = document.getElementById("players");
+    container.innerHTML = "";
+
+    players.forEach((p, idx) => {
+      const div = document.createElement("div");
+      div.className = "player";
+      if (p.status === "out") div.classList.add("out");
+
+      /* 名前（縦書き・自動縮小） */
+      const nameDiv = document.createElement("div");
+      nameDiv.className = "player-name";
+      nameDiv.textContent = p.name;
+      div.appendChild(nameDiv);
+      requestAnimationFrame(() => adjustNameSize(nameDiv));
+
+      /* 状態表示 */
+      const statusDiv = document.createElement("div");
+      statusDiv.className = "player-status";
+      if (getPreset() === "freeze" && p.freezeStop > 0) {
+        statusDiv.textContent = `Stop ${p.freezeStop}`;
+      } else if (p.status === "out") {
+        statusDiv.textContent = "脱落";
+      } else {
+        statusDiv.textContent = "";
+      }
+      div.appendChild(statusDiv);
+
+      /* 得点表示：合計 - 誤答数 */
+      const scoreLine = document.createElement("div");
+      scoreLine.className = "player-scoreline";
+
+      const total = calcTotal(p);
+      const rawWrong = p.scores["誤答"];
+      const wrong = Number.isFinite(rawWrong) ? rawWrong : 0;
+
+      scoreLine.innerHTML = `
+        <span class="player-score-total">${total}</span>
+        <span class="player-score-dash"> - </span>
+        <span class="player-score-wrong">${wrong}</span>
+      `;
+      div.appendChild(scoreLine);
+
+      /* ボタン（○ ×） */
+      const btnRow = document.createElement("div");
+      btnRow.className = "player-buttons";
+
+      const btnCorrect = document.createElement("button");
+      btnCorrect.className = "score-btn";
+      btnCorrect.textContent = "○";
+      btnCorrect.disabled = p.status === "out" || finished;
+      if (p.freezeStop > 0) btnCorrect.style.display = "none";
+      btnCorrect.onclick = () => changeScore(idx, "正解", +1);
+      btnRow.appendChild(btnCorrect);
+
+      const btnWrong = document.createElement("button");
+      btnWrong.className = "score-btn";
+      btnWrong.textContent = "×";
+      btnWrong.disabled = p.status === "out" || finished;
+      if (p.freezeStop > 0) btnWrong.style.display = "none";
+      btnWrong.onclick = () => changeScore(idx, "誤答", +1);
+      btnRow.appendChild(btnWrong);
+
+      div.appendChild(btnRow);
+      container.appendChild(div);
+    });
+
+    document.getElementById("problemCountDisplay").textContent =
+      `問題数: ${problemCount}`;
+
+    renderLog();
+  }
+
+  function addPlayer() {
+    const name = document.getElementById("playerName").value;
+    if (!name) return;
+    players.push({ name, scores: {}, status: "alive", freezeStop: 0 });
+    document.getElementById("playerName").value = "";
+    render();
+  }
+
+  function changeScore(playerIndex, itemName, delta) {
+    if (finished) return;
+
+    const p = players[playerIndex];
+    const preset = getPreset();
+
+    if (typeof p.scores[itemName] !== "number") {
+      p.scores[itemName] = 0;
+    }
+
+    const prevData = {
+      type: "score",
+      playerIndex,
+      itemName,
+      delta: -delta,
+      problemDelta: -1,
+      prevStatus: p.status,
+      prevScores: JSON.parse(JSON.stringify(p.scores)),
+      prevFreeze: p.freezeStop
+    };
+
+    let skipFreezeDecay = false;
+
+    logs.push(`${new Date().toLocaleTimeString()} ${p.name} ${itemName} +1`);
+
+    /* スコア加算 */
+    p.scores[itemName] += delta;
+
+    /* Up-Down */
+    if (preset === "updown" && itemName === "誤答") {
+      if (p.scores["誤答"] === 1) {
+        if (typeof p.scores["正解"] !== "number") p.scores["正解"] = 0;
+        p.scores["正解"] = 0;
+      }
+      if (p.scores["誤答"] === 2) {
+        p.status = "out";
+      }
+    }
+
+    /* Freeze：誤答数加算後に Stop をセットし、この問題では減衰しない */
+    if (preset === "freeze" && itemName === "誤答") {
+      p.freezeStop = p.scores["誤答"];  // 加算後の値
+      skipFreezeDecay = true;
+    }
+
+    history.push(prevData);
+
+    problemCount++;
+    if (!skipFreezeDecay) {
+      applyFreezeDecay();
+    }
+    updateGauge();
+    checkFinish();
+    render();
+  }
+
+  function noAnswer() {
+    if (finished) return;
+
+    history.push({
+      type: "noAnswer",
+      problemDelta: -1,
+      prevFreeze: players.map(p => p.freezeStop)
+    });
+
+    logs.push(`${new Date().toLocaleTimeString()} スルー（無回答）`);
+
+    problemCount++;
+    applyFreezeDecay();
+    updateGauge();
+    checkFinish();
+    render();
+  }
+
+  function applyFreezeDecay() {
+    if (getPreset() !== "freeze") return;
+
+    players.forEach(p => {
+      if (p.freezeStop > 0) p.freezeStop--;
     });
   }
 
-  if (last.problemDelta) {
-    problemCount += last.problemDelta;
-  }
-
-  finished = false;
-  updateQuestionDisplay();
-  updateGauge();
-  render();
-}
-
-/* 合計得点 */
-function calcTotal(player) {
-  let total = 0;
-  scoreItems.forEach(item => {
-    const v = player.scores[item.name];
-    const safe = Number.isFinite(v) ? v : 0;
-    total += safe * item.weight;
-  });
-  return total;
-}
-
-/* ログ描画 */
-function renderLog() {
-  const logDiv = document.getElementById("log");
-  logDiv.innerHTML = "";
-
-  logs.slice(-200).forEach(line => {
-    const div = document.createElement("div");
-    div.className = "log-item";
-    div.textContent = line;
-    logDiv.appendChild(div);
-  });
-}
-
-/* プレイヤー描画 */
-function render() {
-  const area = document.getElementById("players");
-  area.innerHTML = "";
-
-  players.forEach((p, index) => {
-    const card = document.createElement("div");
-    card.className = "player-card";
-
-    if (p.status === "out") {
-      card.classList.add("player-out");
-    }
-
-    const nameDiv = document.createElement("div");
-    nameDiv.className = "player-name";
-    nameDiv.textContent = p.name;
-    card.appendChild(nameDiv);
-
-    const scoreDiv = document.createElement("div");
-    scoreDiv.className = "player-score";
-
-    const total = calcTotal(p);
-    const wrong = p.scores["誤答"] ?? 0;
-    scoreDiv.textContent = `${total} - ${wrong}`;
-
-    card.appendChild(scoreDiv);
-
-    area.appendChild(card);
-  });
-
-  renderLog();
-}
-
-/* キーボード操作（○×ボタン廃止） */
-document.addEventListener("keydown", (e) => {
-  if (finished) return;
-
-  const key = e.key;
-
-  /* 正解：数字キー（1〜9 → 1〜9人目、0 → 10人目） */
-  if (!e.shiftKey) {
-    let index = null;
-
-    if (key >= "1" && key <= "9") index = parseInt(key) - 1;
-    else if (key === "0") index = 9;
-
-    if (index !== null && index < players.length) {
-      const p = players[index];
-      if (p.status !== "out" && p.freezeStop === 0) {
-        changeScore(index, "正解", +1);
-      }
+  function checkFinish() {
+    if (maxProblems && problemCount >= maxProblems) {
+      finished = true;
+      logs.push(`${new Date().toLocaleTimeString()} ★終了★`);
     }
   }
 
-  /* 誤答：Shift + 数字 */
-  if (e.shiftKey) {
-    let index = null;
+  function undo() {
+    const last = history.pop();
+    if (!last) return;
 
-    if (key >= "1" && key <= "9") index = parseInt(key) - 1;
-    else if (key === "0") index = 9;
+    if (last.type === "score") {
+      const p = players[last.playerIndex];
+      p.scores = last.prevScores;
+      p.status = last.prevStatus;
+      p.freezeStop = last.prevFreeze;
 
-    if (index !== null && index < players.length) {
-      const p = players[index];
-      if (p.status !== "out" && p.freezeStop === 0) {
-        changeScore(index, "誤答", +1);
-      }
+      logs.push(`${new Date().toLocaleTimeString()} Undo: ${p.name} ${last.itemName}`);
     }
+
+    if (last.type === "noAnswer") {
+      logs.push(`${new Date().toLocaleTimeString()} Undo: スルー取消`);
+      players.forEach((p, i) => {
+        p.freezeStop = last.prevFreeze[i];
+      });
+    }
+
+    if (last.problemDelta) {
+      problemCount += last.problemDelta;
+    }
+
+    finished = false;
+    updateGauge();
+    render();
   }
 
-  /* Insert → スルー */
-  if (key === "Insert") {
-    noAnswer();
+  function calcTotal(player) {
+    let total = 0;
+    scoreItems.forEach(item => {
+      const v = player.scores[item.name];
+      const safe = Number.isFinite(v) ? v : 0;
+      total += safe * item.weight;
+    });
+    return total;
   }
 
-  /* Delete → Undo */
-  if (key === "Delete") {
-    undo();
+  function renderLog() {
+    const logDiv = document.getElementById("log");
+    logDiv.innerHTML = "";
+
+    logs.slice(-200).forEach(line => {
+      const div = document.createElement("div");
+      div.className = "log-item";
+      div.textContent = line;
+      logDiv.appendChild(div);
+    });
   }
-});
 </script>
 
 </body>
