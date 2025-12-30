@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Main v24</title>
+  <title>Score Main v25</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -108,9 +108,9 @@
 
 <body>
 
-<h2>Score Main v24</h2>
+<h2>Score Main v25</h2>
 
-<!-- 問題数表示（main に残す） -->
+<!-- 問題数表示 -->
 <h3 id="problemCountDisplay">問題数: 0</h3>
 
 <!-- ゲージ -->
@@ -120,6 +120,7 @@
     <div id="gaugeBar"></div>
   </div>
 </div>
+
 <!-- 現在の設定表示 -->
 <div id="currentSettings" style="
   border:1px solid #ccc;
@@ -132,6 +133,7 @@
   <div>限定問題数：<span id="cs_max">---</span></div>
   <div>現在：<span id="cs_now">0</span> 問</div>
 </div>
+
 <!-- プレイヤー一覧 -->
 <div id="players"></div>
 
@@ -142,12 +144,18 @@
 
 <script>
   /* ====== データ（settings.html から localStorage で受け取る） ====== */
-  let players = JSON.parse(localStorage.getItem("players") || "[]");
-  let scoreItems = JSON.parse(localStorage.getItem("scoreItems") || "[]");
-  let logs = JSON.parse(localStorage.getItem("logs") || "[]");
-  let problemCount = Number(localStorage.getItem("problemCount") || 0);
-  let maxProblems = Number(localStorage.getItem("maxProblems") || 0);
-  let finished = false;
+  let players      = JSON.parse(localStorage.getItem("players")      || "[]");
+  let scoreItems   = JSON.parse(localStorage.getItem("scoreItems")   || "[]");
+  let logs         = JSON.parse(localStorage.getItem("logs")         || "[]");
+  let problemCount = Number(localStorage.getItem("problemCount")     || 0);
+  let maxProblems  = Number(localStorage.getItem("maxProblems")      || 0);
+  let finished     = false;
+  let history      = [];
+
+  /* ルール取得：main では localStorage から読む */
+  function getPreset() {
+    return localStorage.getItem("currentRule") || "";
+  }
 
   /* ====== ゲージ描画 ====== */
   function drawGaugeTicks() {
@@ -226,8 +234,13 @@
 
       const statusDiv = document.createElement("div");
       statusDiv.className = "player-status";
-      if (p.freezeStop > 0) statusDiv.textContent = `Stop ${p.freezeStop}`;
-      else if (p.status === "out") statusDiv.textContent = "脱落";
+      if (getPreset() === "freeze" && p.freezeStop > 0) {
+        statusDiv.textContent = `Stop ${p.freezeStop}`;
+      } else if (p.status === "out") {
+        statusDiv.textContent = "脱落";
+      } else {
+        statusDiv.textContent = "";
+      }
       div.appendChild(statusDiv);
 
       const scoreLine = document.createElement("div");
@@ -248,6 +261,147 @@
 
     document.getElementById("problemCountDisplay").textContent =
       `問題数: ${problemCount}`;
+  }
+
+  /* 現在の設定表示 */
+  function updateCurrentSettings() {
+    const rule = getPreset() || "---";
+    const max  = localStorage.getItem("maxProblems")  || "---";
+    const now  = localStorage.getItem("problemCount") || 0;
+
+    document.getElementById("cs_rule").textContent = rule;
+    document.getElementById("cs_max").textContent  = max;
+    document.getElementById("cs_now").textContent  = now;
+  }
+
+  /* ====== Freeze 減衰 / 終了判定 ====== */
+  function applyFreezeDecay() {
+    if (getPreset() !== "freeze") return;
+    players.forEach(p => {
+      if (p.freezeStop > 0) p.freezeStop--;
+    });
+  }
+
+  function checkFinish() {
+    if (maxProblems && problemCount >= maxProblems) {
+      finished = true;
+      logs.push(`${new Date().toLocaleTimeString()} ★終了★`);
+    }
+  }
+
+  /* ====== スコア処理（v23.5.5 ロジック復元） ====== */
+  function changeScore(playerIndex, itemName, delta) {
+    if (finished) return;
+
+    const p = players[playerIndex];
+    const preset = getPreset();
+
+    if (typeof p.scores[itemName] !== "number") {
+      p.scores[itemName] = 0;
+    }
+
+    const prevData = {
+      type: "score",
+      playerIndex,
+      itemName,
+      delta: -delta,
+      problemDelta: -1,
+      prevStatus: p.status,
+      prevScores: JSON.parse(JSON.stringify(p.scores)),
+      prevFreeze: p.freezeStop
+    };
+
+    let skipFreezeDecay = false;
+
+    logs.push(`${new Date().toLocaleTimeString()} ${p.name} ${itemName} +1`);
+
+    /* スコア加算 */
+    p.scores[itemName] += delta;
+
+    /* Up-Down */
+    if (preset === "updown" && itemName === "誤答") {
+      if (p.scores["誤答"] === 1) {
+        if (typeof p.scores["正解"] !== "number") p.scores["正解"] = 0;
+        p.scores["正解"] = 0;
+      }
+      if (p.scores["誤答"] === 2) {
+        p.status = "out";
+      }
+    }
+
+    /* Freeze：誤答数加算後に Stop をセットし、この問題では減衰しない */
+    if (preset === "freeze" && itemName === "誤答") {
+      p.freezeStop = p.scores["誤答"];
+      skipFreezeDecay = true;
+    }
+
+    history.push(prevData);
+
+    problemCount++;
+    if (!skipFreezeDecay) {
+      applyFreezeDecay();
+    }
+    updateGauge();
+    checkFinish();
+    render();
+
+    localStorage.setItem("players", JSON.stringify(players));
+    localStorage.setItem("problemCount", problemCount);
+    localStorage.setItem("logs", JSON.stringify(logs));
+  }
+
+  function noAnswer() {
+    if (finished) return;
+
+    history.push({
+      type: "noAnswer",
+      problemDelta: -1,
+      prevFreeze: players.map(p => p.freezeStop)
+    });
+
+    logs.push(`${new Date().toLocaleTimeString()} スルー（無回答）`);
+
+    problemCount++;
+    applyFreezeDecay();
+    updateGauge();
+    checkFinish();
+    render();
+
+    localStorage.setItem("problemCount", problemCount);
+    localStorage.setItem("logs", JSON.stringify(logs));
+  }
+
+  function undo() {
+    const last = history.pop();
+    if (!last) return;
+
+    if (last.type === "score") {
+      const p = players[last.playerIndex];
+      p.scores = last.prevScores;
+      p.status = last.prevStatus;
+      p.freezeStop = last.prevFreeze;
+
+      logs.push(`${new Date().toLocaleTimeString()} Undo: ${p.name} ${last.itemName}`);
+    }
+
+    if (last.type === "noAnswer") {
+      logs.push(`${new Date().toLocaleTimeString()} Undo: スルー取消`);
+      players.forEach((p, i) => {
+        p.freezeStop = last.prevFreeze[i];
+      });
+    }
+
+    if (last.problemDelta) {
+      problemCount += last.problemDelta;
+    }
+
+    finished = false;
+    updateGauge();
+    render();
+
+    localStorage.setItem("players", JSON.stringify(players));
+    localStorage.setItem("problemCount", problemCount);
+    localStorage.setItem("logs", JSON.stringify(logs));
   }
 
   /* ====== キーボード操作 ====== */
@@ -293,59 +447,26 @@
     }
   });
 
-  /* ====== スコア処理（settings.html と同じロジック） ====== */
-  function changeScore(playerIndex, itemName, delta) {
-    const p = players[playerIndex];
+  /* ====== localStorage 変更監視（settings → main） ====== */
+  window.addEventListener("storage", () => {
+    players      = JSON.parse(localStorage.getItem("players")      || "[]");
+    scoreItems   = JSON.parse(localStorage.getItem("scoreItems")   || "[]");
+    logs         = JSON.parse(localStorage.getItem("logs")         || "[]");
+    problemCount = Number(localStorage.getItem("problemCount")     || 0);
+    maxProblems  = Number(localStorage.getItem("maxProblems")      || 0);
+    finished     = false;
 
-    if (typeof p.scores[itemName] !== "number") {
-      p.scores[itemName] = 0;
-    }
-
-    p.scores[itemName] += delta;
-
-    problemCount++;
+    drawGaugeTicks();
     updateGauge();
     render();
-
-    localStorage.setItem("players", JSON.stringify(players));
-    localStorage.setItem("problemCount", problemCount);
-  }
-
-  function noAnswer() {
-    problemCount++;
-    updateGauge();
-    render();
-    localStorage.setItem("problemCount", problemCount);
-  }
-
-  function undo() {
-    if (problemCount > 0) problemCount--;
-    updateGauge();
-    render();
-    localStorage.setItem("problemCount", problemCount);
-  }
-
-  function updateCurrentSettings() {
-    const rule = localStorage.getItem("currentRule") || "---";
-    const max = localStorage.getItem("maxProblems") || "---";
-    const now = localStorage.getItem("problemCount") || 0;
-
-    document.getElementById("cs_rule").textContent = rule;
-    document.getElementById("cs_max").textContent = max;
-    document.getElementById("cs_now").textContent = now;
-  }
+    updateCurrentSettings();
+  });
 
   /* 初期描画 */
   drawGaugeTicks();
   updateGauge();
   render();
   updateCurrentSettings();
-
-  window.addEventListener("storage", () => {
-  updateCurrentSettings();
-});
-
-  
 </script>
 
 </body>
