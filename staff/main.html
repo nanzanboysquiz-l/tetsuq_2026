@@ -358,6 +358,16 @@
 
   /* ====== スコア処理 ====== */
   function changeScore(playerIndex, itemName, delta) {
+    const prevData = {
+      type: "score",
+      playerIndex,
+      prevScores: JSON.parse(JSON.stringify(p.scores)),
+      prevStatus: p.status,
+      prevFreeze: p.freezeStop,
+      prevWinners: [...winners],
+      problemDelta: -1
+    };
+    history.push(prevData);
     if (finished || winSettingMode) return;
 
     const p = players[playerIndex];
@@ -379,7 +389,7 @@
     }
 
     if (preset === "freeze" && itemName === "誤答") {
-      p.freezeStop = p.scores["誤答"];
+      p.freezeStop = p.scores["誤答"]+1;
     }
 
     checkLose(playerIndex);
@@ -415,7 +425,13 @@
   function undo() {
     if (finished || winSettingMode) return;
     if (problemCount > 0) problemCount--;
-
+    if (last.type === "score") {
+      const p = players[last.playerIndex];
+      p.scores = last.prevScores;
+      p.status = last.prevStatus;
+      p.freezeStop = last.prevFreeze;
+      winners = last.prevWinners;
+    }
     updateGauge();
     render();
     updateCurrentSettings();
