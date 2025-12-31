@@ -216,6 +216,12 @@
 
   loadInitialValues();
   renderLog();
+  
+  /* ====== main.html からの log 更新を監視 ====== */
+  window.addEventListener("storage", () => {
+    logs = JSON.parse(localStorage.getItem("logs") || "[]");
+    renderLog();
+  });
 </script>
 
 </body>
