@@ -318,7 +318,7 @@
     const p = players[playerIndex];
     const total = calcTotal(p);
 
-    if (total > winScore && !winners.includes(playerIndex)) {
+    if (total >= winScore && !winners.includes(playerIndex)) {
       winners.push(playerIndex);
       localStorage.setItem("winners", JSON.stringify(winners));
     }
@@ -333,7 +333,7 @@
     const p = players[playerIndex];
     const wrong = p.scores["誤答"] || 0;
 
-    if (wrong > loseWrong) {
+    if (wrong >= loseWrong) {
       p.status = "out";
     }
   }
