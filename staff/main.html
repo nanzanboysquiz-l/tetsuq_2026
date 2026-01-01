@@ -2,13 +2,12 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Main v28</title>
+  <title>Score Main v29</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
     #players {
       display: flex;
-      flex-direction: row;
       flex-wrap: wrap;
       gap: 10px;
     }
@@ -31,10 +30,8 @@
       writing-mode: vertical-rl;
       text-orientation: upright;
       font-weight: 900;
-      line-height: 1.1;
       height: 180px;
       width: 40px;
-      white-space: nowrap;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -98,10 +95,9 @@
       position: absolute;
       top: -110px;
       width: 98px;
-      height: auto;
-      transition: transform 0.3s;
       pointer-events: none;
       display: none;
+      transition: transform 0.3s;
     }
 
     #winMode {
@@ -115,10 +111,9 @@
 
 <body>
 
-<h2>Score Main v28</h2>
+<h2>Score Main v29</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
-
 <div id="winMode"></div>
 
 <div id="gaugeWrapper">
@@ -145,7 +140,7 @@
 
 <div id="players"></div>
 
-<div style="margin-top:20px; display:flex; gap:10px; align-items:center;">
+<div style="margin-top:20px; display:flex; gap:10px;">
   <a href="settings.html">設定画面へ</a>
   <button onclick="resetAll()">リセット</button>
 </div>
@@ -195,8 +190,7 @@ function updateGauge() {
   }
 
   const ratio = Math.min(problemCount / maxProblems, 1);
-  const bar = document.getElementById("gaugeBar");
-  bar.style.width = (ratio * 100) + "%";
+  document.getElementById("gaugeBar").style.width = (ratio * 100) + "%";
 
   const icon = document.getElementById("gaugeIcon");
   const containerWidth = document.getElementById("gaugeContainer").offsetWidth;
@@ -205,9 +199,8 @@ function updateGauge() {
   if (problemCount === 0) {
     icon.style.display = "none";
     return;
-  } else {
-    icon.style.display = "block";
   }
+  icon.style.display = "block";
 
   const x = ratio * containerWidth - iconWidth;
   icon.style.transform = `translateX(${x}px)`;
@@ -254,14 +247,11 @@ function render() {
     statusDiv.className = "player-status";
 
     if (winners.includes(idx)) {
-      const rank = winners.indexOf(idx) + 1;
-      statusDiv.textContent = `${rank}位`;
+      statusDiv.textContent = `${winners.indexOf(idx) + 1}位`;
     } else if (getPreset() === "freeze" && p.freezeStop > 0) {
       statusDiv.textContent = `Stop ${p.freezeStop}`;
     } else if (p.status === "out") {
       statusDiv.textContent = "脱落";
-    } else {
-      statusDiv.textContent = "";
     }
     div.appendChild(statusDiv);
 
@@ -294,8 +284,7 @@ function updateCurrentSettings() {
   document.getElementById("cs_winCount").textContent  = winCount;
   document.getElementById("cs_loseWrong").textContent = loseWrong;
 }
-
-/* ====== Freeze 減衰 ====== */
+  /* ====== Freeze 減衰 ====== */
 function applyFreezeDecay() {
   if (getPreset() !== "freeze") return;
   players.forEach(p => {
@@ -322,10 +311,7 @@ function checkWinner(playerIndex) {
 function checkLose(playerIndex) {
   const p = players[playerIndex];
   const wrong = p.scores["誤答"] || 0;
-
-  if (wrong >= loseWrong) {
-    p.status = "out";
-  }
+  if (wrong >= loseWrong) p.status = "out";
 }
 
 /* ====== 勝ち抜け設定モード判定 ====== */
@@ -336,13 +322,11 @@ function checkWinSettingMode() {
     p.status !== "out" && !winners.includes(i)
   ).length;
 
-  if (maxProblems && problemCount >= maxProblems && winners.length < winCount) {
+  if (maxProblems && problemCount >= maxProblems && winners.length < winCount)
     winSettingMode = true;
-  }
 
-  if (alive === winCount - winners.length) {
+  if (alive === winCount - winners.length)
     winSettingMode = true;
-  }
 
   document.getElementById("winMode").textContent =
     winSettingMode ? "勝ち抜け設定モード" : "";
@@ -368,19 +352,12 @@ function changeScore(playerIndex, itemName, delta) {
   };
   history.push(prevData);
 
-  if (typeof p.scores[itemName] !== "number") {
-    p.scores[itemName] = 0;
-  }
-
+  if (typeof p.scores[itemName] !== "number") p.scores[itemName] = 0;
   p.scores[itemName] += delta;
 
   if (preset === "updown" && itemName === "誤答") {
-    if (p.scores["誤答"] === 1) {
-      p.scores["正解"] = 0;
-    }
-    if (p.scores["誤答"] === 2) {
-      p.status = "out";
-    }
+    if (p.scores["誤答"] === 1) p.scores["正解"] = 0;
+    if (p.scores["誤答"] === 2) p.status = "out";
   }
 
   if (preset === "freeze" && itemName === "誤答") {
@@ -468,12 +445,12 @@ function undo() {
   localStorage.setItem("winners", JSON.stringify(winners));
 }
 
-/* ====== キーボード操作 ====== */
+  /* ====== キーボード操作 ====== */
 document.addEventListener("keydown", (e) => {
   const code = e.code;
   const isNumpad = code.startsWith("Numpad");
 
-  // ★ 勝ち抜け設定モード中の操作（順位付け）
+  /* --- 勝ち抜け設定モード中：順位付け --- */
   if (winSettingMode) {
     if (!isNumpad) return;
     e.preventDefault();
@@ -502,7 +479,7 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  // ★ ここから通常モード
+  /* --- 通常モード --- */
   if (finished) return;
 
   if (isNumpad) {
@@ -537,6 +514,38 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 });
+
+/* ====== リセット ====== */
+function resetAll() {
+  const ok = window.confirm("全データをリセットします。よろしいですか？");
+  if (!ok) return;
+
+  players.forEach(p => {
+    p.scores = {};
+    p.status = "alive";
+    p.freezeStop = 0;
+  });
+
+  history = [];
+  logs = [];
+  problemCount = 0;
+  finished = false;
+  winners = [];
+  winSettingMode = false;
+
+  localStorage.setItem("players", JSON.stringify(players));
+  localStorage.setItem("problemCount", problemCount);
+  localStorage.setItem("logs", JSON.stringify(logs));
+  localStorage.setItem("winners", JSON.stringify(winners));
+
+  updateGauge();
+  render();
+  updateCurrentSettings();
+  checkWinSettingMode();
+
+  /* ★ main 自身にも storage イベントを発火させる（画面更新のため） */
+  window.dispatchEvent(new Event("storage"));
+}
 
 /* ====== localStorage 監視 ====== */
 window.addEventListener("storage", () => {
