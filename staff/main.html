@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Main v27</title>
+  <title>Score Main v27-fixed</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -297,11 +297,11 @@
 
   /* ====== 設定表示 ====== */
   function updateCurrentSettings() {
-    document.getElementById("cs_rule").textContent     = getPreset() || "---";
-    document.getElementById("cs_max").textContent      = maxProblems || "---";
-    document.getElementById("cs_now").textContent      = problemCount;
-    document.getElementById("cs_winScore").textContent = winScore;
-    document.getElementById("cs_winCount").textContent = winCount;
+    document.getElementById("cs_rule").textContent      = getPreset() || "---";
+    document.getElementById("cs_max").textContent       = maxProblems || "---";
+    document.getElementById("cs_now").textContent       = problemCount;
+    document.getElementById("cs_winScore").textContent  = winScore;
+    document.getElementById("cs_winCount").textContent  = winCount;
     document.getElementById("cs_loseWrong").textContent = loseWrong;
   }
 
@@ -344,7 +344,7 @@
 
     const alive = players.filter((p, i) => p.status !== "out" && !winners.includes(i)).length;
 
-    if (problemCount >= maxProblems && winners.length < winCount) {
+    if (maxProblems && problemCount >= maxProblems && winners.length < winCount) {
       winSettingMode = true;
     }
 
@@ -358,27 +358,31 @@
 
   /* ====== スコア処理 ====== */
   function changeScore(playerIndex, itemName, delta) {
+    if (finished || winSettingMode) return;
+
+    const p = players[playerIndex];
+    const preset = getPreset();
+
+    // Undo 用に現在状態を保存
     const prevData = {
       type: "score",
       playerIndex,
-      prevScores: JSON.parse(JSON.stringify(p.scores)),
+      prevScores: JSON.parse(JSON.stringify(p.scores || {})),
       prevStatus: p.status,
       prevFreeze: p.freezeStop,
       prevWinners: [...winners],
       problemDelta: -1
     };
     history.push(prevData);
-    if (finished || winSettingMode) return;
-
-    const p = players[playerIndex];
-    const preset = getPreset();
 
     if (typeof p.scores[itemName] !== "number") {
       p.scores[itemName] = 0;
     }
 
+    // 通常加算
     p.scores[itemName] += delta;
 
+    // Up-Down 誤答
     if (preset === "updown" && itemName === "誤答") {
       if (p.scores["誤答"] === 1) {
         p.scores["正解"] = 0;
@@ -388,8 +392,9 @@
       }
     }
 
+    // Freeze 誤答：誤答加算後の値をベースに +1 セット → その問題の decay で -1 されて誤答数と一致
     if (preset === "freeze" && itemName === "誤答") {
-      p.freezeStop = p.scores["誤答"]+1;
+      p.freezeStop = (p.scores["誤答"] || 0) + 1;
     }
 
     checkLose(playerIndex);
@@ -424,20 +429,29 @@
   /* ====== Undo ====== */
   function undo() {
     if (finished || winSettingMode) return;
-    if (problemCount > 0) problemCount--;
+
+    const last = history.pop();
+    if (!last) return;
+
     if (last.type === "score") {
       const p = players[last.playerIndex];
       p.scores = last.prevScores;
       p.status = last.prevStatus;
       p.freezeStop = last.prevFreeze;
       winners = last.prevWinners;
+      problemCount += last.problemDelta; // -1
     }
+
+    finished = false;
+
     updateGauge();
     render();
     updateCurrentSettings();
     checkWinSettingMode();
 
+    localStorage.setItem("players", JSON.stringify(players));
     localStorage.setItem("problemCount", problemCount);
+    localStorage.setItem("winners", JSON.stringify(winners));
   }
 
   /* ====== 勝ち抜け設定モード（テンキー） ====== */
@@ -503,7 +517,6 @@
   /* ====== キーボード操作 ====== */
   document.addEventListener("keydown", (e) => {
     if (winSettingMode) return;
-
     if (finished) return;
 
     const code = e.code;
