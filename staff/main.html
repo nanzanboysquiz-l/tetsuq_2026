@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Main v27</title>
+  <title>Score Main v28</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -115,15 +115,12 @@
 
 <body>
 
-<h2>Score Main v27</h2>
+<h2>Score Main v28</h2>
 
-<!-- 問題数表示 -->
 <h3 id="problemCountDisplay">問題数: 0</h3>
 
-<!-- 勝ち抜け設定モード表示 -->
 <div id="winMode"></div>
 
-<!-- ゲージ -->
 <div id="gaugeWrapper">
   <img id="gaugeIcon" src="assets/images/tokuten/kyot10l.png">
   <div id="gaugeContainer">
@@ -131,7 +128,6 @@
   </div>
 </div>
 
-<!-- 現在の設定表示 -->
 <div id="currentSettings" style="
   border:1px solid #ccc;
   padding:10px;
@@ -147,460 +143,399 @@
   <div>脱落誤答数：<span id="cs_loseWrong">---</span></div>
 </div>
 
-<!-- プレイヤー一覧 -->
 <div id="players"></div>
 
-<!-- 設定画面・リセット -->
 <div style="margin-top:20px; display:flex; gap:10px; align-items:center;">
   <a href="settings.html">設定画面へ</a>
   <button onclick="resetAll()">リセット</button>
 </div>
 
 <script>
-  /* ====== データ読み込み ====== */
-  let players      = JSON.parse(localStorage.getItem("players")      || "[]");
-  let scoreItems   = JSON.parse(localStorage.getItem("scoreItems")   || "[]");
-  let logs         = JSON.parse(localStorage.getItem("logs")         || "[]");
-  let problemCount = Number(localStorage.getItem("problemCount")     || 0);
-  let maxProblems  = Number(localStorage.getItem("maxProblems")      || 0);
-  let finished     = false;
-  let history      = [];
+/* ====== データ読み込み ====== */
+let players      = JSON.parse(localStorage.getItem("players")      || "[]");
+let scoreItems   = JSON.parse(localStorage.getItem("scoreItems")   || "[]");
+let logs         = JSON.parse(localStorage.getItem("logs")         || "[]");
+let problemCount = Number(localStorage.getItem("problemCount")     || 0);
+let maxProblems  = Number(localStorage.getItem("maxProblems")      || 0);
+let finished     = false;
+let history      = [];
 
-  /* 勝ち抜け・脱落設定 */
-  let winScore  = Number(localStorage.getItem("winScore")  || 0);
-  let winCount  = Number(localStorage.getItem("winCount")  || 0);
-  let loseWrong = Number(localStorage.getItem("loseWrong") || 0);
+let winScore  = Number(localStorage.getItem("winScore")  || 0);
+let winCount  = Number(localStorage.getItem("winCount")  || 0);
+let loseWrong = Number(localStorage.getItem("loseWrong") || 0);
 
-  /* 勝ち抜け順位 */
-  let winners = JSON.parse(localStorage.getItem("winners") || "[]");
+let winners = JSON.parse(localStorage.getItem("winners") || "[]");
+let winSettingMode = false;
 
-  /* 勝ち抜け設定モード */
-  let winSettingMode = false;
+function getPreset() {
+  return localStorage.getItem("currentRule") || "";
+}
 
-  function getPreset() {
-    return localStorage.getItem("currentRule") || "";
+/* ====== ゲージ ====== */
+function drawGaugeTicks() {
+  const container = document.getElementById("gaugeContainer");
+  container.querySelectorAll(".gaugeTick").forEach(e => e.remove());
+
+  if (!maxProblems) return;
+
+  for (let i = 5; i <= maxProblems; i += 5) {
+    const tick = document.createElement("div");
+    tick.className = "gaugeTick";
+    const ratio = i / maxProblems;
+    tick.style.left = `calc(${ratio * 100}% - 2px)`;
+    container.appendChild(tick);
+  }
+}
+
+function updateGauge() {
+  if (!maxProblems) {
+    document.getElementById("gaugeBar").style.width = "0%";
+    document.getElementById("gaugeIcon").style.display = "none";
+    return;
   }
 
-  /* ====== ゲージ描画 ====== */
-  function drawGaugeTicks() {
-    const container = document.getElementById("gaugeContainer");
-    container.querySelectorAll(".gaugeTick").forEach(e => e.remove());
+  const ratio = Math.min(problemCount / maxProblems, 1);
+  const bar = document.getElementById("gaugeBar");
+  bar.style.width = (ratio * 100) + "%";
 
-    if (!maxProblems) return;
+  const icon = document.getElementById("gaugeIcon");
+  const containerWidth = document.getElementById("gaugeContainer").offsetWidth;
+  const iconWidth = icon.offsetWidth;
 
-    for (let i = 5; i <= maxProblems; i += 5) {
-      const tick = document.createElement("div");
-      tick.className = "gaugeTick";
-      const ratio = i / maxProblems;
-      tick.style.left = `calc(${ratio * 100}% - 2px)`;
-      container.appendChild(tick);
-    }
+  if (problemCount === 0) {
+    icon.style.display = "none";
+    return;
+  } else {
+    icon.style.display = "block";
   }
 
-  function updateGauge() {
-    if (!maxProblems) {
-      document.getElementById("gaugeBar").style.width = "0%";
-      document.getElementById("gaugeIcon").style.display = "none";
-      return;
-    }
+  const x = ratio * containerWidth - iconWidth;
+  icon.style.transform = `translateX(${x}px)`;
+}
 
-    const ratio = Math.min(problemCount / maxProblems, 1);
-    const bar = document.getElementById("gaugeBar");
-    bar.style.width = (ratio * 100) + "%";
+/* ====== プレイヤー描画 ====== */
+function adjustNameSize(nameDiv) {
+  const maxHeight = 180;
+  nameDiv.style.transform = "scaleY(1)";
+  const actual = nameDiv.scrollHeight;
 
-    const icon = document.getElementById("gaugeIcon");
-    const containerWidth = document.getElementById("gaugeContainer").offsetWidth;
-    const iconWidth = icon.offsetWidth;
+  if (actual > maxHeight) {
+    const scale = (maxHeight / actual) * 0.85;
+    nameDiv.style.transform = `scaleY(${scale})`;
+  }
+}
 
-    if (problemCount === 0) {
-      icon.style.display = "none";
-      return;
+function calcTotal(player) {
+  let total = 0;
+  scoreItems.forEach(item => {
+    const v = player.scores[item.name];
+    const safe = Number.isFinite(v) ? v : 0;
+    total += safe * item.weight;
+  });
+  return total;
+}
+
+function render() {
+  const container = document.getElementById("players");
+  container.innerHTML = "";
+
+  players.forEach((p, idx) => {
+    const div = document.createElement("div");
+    div.className = "player";
+    if (p.status === "out") div.classList.add("out");
+
+    const nameDiv = document.createElement("div");
+    nameDiv.className = "player-name";
+    nameDiv.textContent = p.name;
+    div.appendChild(nameDiv);
+    requestAnimationFrame(() => adjustNameSize(nameDiv));
+
+    const statusDiv = document.createElement("div");
+    statusDiv.className = "player-status";
+
+    if (winners.includes(idx)) {
+      const rank = winners.indexOf(idx) + 1;
+      statusDiv.textContent = `${rank}位`;
+    } else if (getPreset() === "freeze" && p.freezeStop > 0) {
+      statusDiv.textContent = `Stop ${p.freezeStop}`;
+    } else if (p.status === "out") {
+      statusDiv.textContent = "脱落";
     } else {
-      icon.style.display = "block";
+      statusDiv.textContent = "";
     }
+    div.appendChild(statusDiv);
 
-    const x = ratio * containerWidth - iconWidth;
-    icon.style.transform = `translateX(${x}px)`;
-  }
+    const scoreLine = document.createElement("div");
+    scoreLine.className = "player-scoreline";
 
-  /* ====== プレイヤー描画 ====== */
-  function adjustNameSize(nameDiv) {
-    const maxHeight = 180;
-    nameDiv.style.transform = "scaleY(1)";
-    const actual = nameDiv.scrollHeight;
-
-    if (actual > maxHeight) {
-      const scale = (maxHeight / actual) * 0.85;
-      nameDiv.style.transform = `scaleY(${scale})`;
-    }
-  }
-
-  function calcTotal(player) {
-    let total = 0;
-    scoreItems.forEach(item => {
-      const v = player.scores[item.name];
-      const safe = Number.isFinite(v) ? v : 0;
-      total += safe * item.weight;
-    });
-    return total;
-  }
-
-  function render() {
-    const container = document.getElementById("players");
-    container.innerHTML = "";
-
-    players.forEach((p, idx) => {
-      const div = document.createElement("div");
-      div.className = "player";
-      if (p.status === "out") div.classList.add("out");
-
-      const nameDiv = document.createElement("div");
-      nameDiv.className = "player-name";
-      nameDiv.textContent = p.name;
-      div.appendChild(nameDiv);
-      requestAnimationFrame(() => adjustNameSize(nameDiv));
-
-      const statusDiv = document.createElement("div");
-      statusDiv.className = "player-status";
-
-      if (winners.includes(idx)) {
-        const rank = winners.indexOf(idx) + 1;
-        statusDiv.textContent = `${rank}位`;
-      } else if (getPreset() === "freeze" && p.freezeStop > 0) {
-        statusDiv.textContent = `Stop ${p.freezeStop}`;
-      } else if (p.status === "out") {
-        statusDiv.textContent = "脱落";
-      } else {
-        statusDiv.textContent = "";
-      }
-      div.appendChild(statusDiv);
-
-      const scoreLine = document.createElement("div");
-      scoreLine.className = "player-scoreline";
-
-      const total = calcTotal(p);
-      const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
-
-      scoreLine.innerHTML = `
-        <span class="player-score-total">${total}</span>
-        <span class="player-score-dash"> - </span>
-        <span class="player-score-wrong">${wrong}</span>
-      `;
-      div.appendChild(scoreLine);
-
-      container.appendChild(div);
-    });
-
-    document.getElementById("problemCountDisplay").textContent =
-      `問題数: ${problemCount}`;
-  }
-
-  /* ====== 設定表示 ====== */
-  function updateCurrentSettings() {
-    document.getElementById("cs_rule").textContent      = getPreset() || "---";
-    document.getElementById("cs_max").textContent       = maxProblems || "---";
-    document.getElementById("cs_now").textContent       = problemCount;
-    document.getElementById("cs_winScore").textContent  = winScore;
-    document.getElementById("cs_winCount").textContent  = winCount;
-    document.getElementById("cs_loseWrong").textContent = loseWrong;
-  }
-
-  /* ====== Freeze 減衰 ====== */
-  function applyFreezeDecay() {
-    if (getPreset() !== "freeze") return;
-    players.forEach(p => {
-      if (p.freezeStop > 0) p.freezeStop--;
-    });
-  }
-
-  /* ====== 勝ち抜け判定 ====== */
-  function checkWinner(playerIndex) {
-    const p = players[playerIndex];
     const total = calcTotal(p);
+    const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
 
-    if (total >= winScore && !winners.includes(playerIndex)) {
-      winners.push(playerIndex);
-      localStorage.setItem("winners", JSON.stringify(winners));
-    }
+    scoreLine.innerHTML = `
+      <span class="player-score-total">${total}</span>
+      <span class="player-score-dash"> - </span>
+      <span class="player-score-wrong">${wrong}</span>
+    `;
+    div.appendChild(scoreLine);
 
-    if (winners.length >= winCount) {
-      finished = true;
-    }
+    container.appendChild(div);
+  });
+
+  document.getElementById("problemCountDisplay").textContent =
+    `問題数: ${problemCount}`;
+}
+
+/* ====== 設定表示 ====== */
+function updateCurrentSettings() {
+  document.getElementById("cs_rule").textContent      = getPreset() || "---";
+  document.getElementById("cs_max").textContent       = maxProblems || "---";
+  document.getElementById("cs_now").textContent       = problemCount;
+  document.getElementById("cs_winScore").textContent  = winScore;
+  document.getElementById("cs_winCount").textContent  = winCount;
+  document.getElementById("cs_loseWrong").textContent = loseWrong;
+}
+
+/* ====== Freeze 減衰 ====== */
+function applyFreezeDecay() {
+  if (getPreset() !== "freeze") return;
+  players.forEach(p => {
+    if (p.freezeStop > 0) p.freezeStop--;
+  });
+}
+
+/* ====== 勝ち抜け判定 ====== */
+function checkWinner(playerIndex) {
+  const p = players[playerIndex];
+  const total = calcTotal(p);
+
+  if (total >= winScore && !winners.includes(playerIndex)) {
+    winners.push(playerIndex);
+    localStorage.setItem("winners", JSON.stringify(winners));
   }
 
-  /* ====== 脱落判定 ====== */
-  function checkLose(playerIndex) {
-    const p = players[playerIndex];
-    const wrong = p.scores["誤答"] || 0;
+  if (winners.length >= winCount) {
+    finished = true;
+  }
+}
 
-    if (wrong >= loseWrong) {
+/* ====== 脱落判定 ====== */
+function checkLose(playerIndex) {
+  const p = players[playerIndex];
+  const wrong = p.scores["誤答"] || 0;
+
+  if (wrong >= loseWrong) {
+    p.status = "out";
+  }
+}
+
+/* ====== 勝ち抜け設定モード判定 ====== */
+function checkWinSettingMode() {
+  if (winners.length >= winCount) return;
+
+  const alive = players.filter((p, i) =>
+    p.status !== "out" && !winners.includes(i)
+  ).length;
+
+  if (maxProblems && problemCount >= maxProblems && winners.length < winCount) {
+    winSettingMode = true;
+  }
+
+  if (alive === winCount - winners.length) {
+    winSettingMode = true;
+  }
+
+  document.getElementById("winMode").textContent =
+    winSettingMode ? "勝ち抜け設定モード" : "";
+}
+
+/* ====== スコア処理 ====== */
+function changeScore(playerIndex, itemName, delta) {
+  if (finished || winSettingMode) return;
+
+  const p = players[playerIndex];
+  const preset = getPreset();
+
+  if (preset === "freeze" && p.freezeStop > 0) return;
+
+  const prevData = {
+    type: "score",
+    playerIndex,
+    prevScores: JSON.parse(JSON.stringify(p.scores || {})),
+    prevStatus: p.status,
+    prevFreeze: p.freezeStop,
+    prevWinners: [...winners],
+    problemDelta: -1
+  };
+  history.push(prevData);
+
+  if (typeof p.scores[itemName] !== "number") {
+    p.scores[itemName] = 0;
+  }
+
+  p.scores[itemName] += delta;
+
+  if (preset === "updown" && itemName === "誤答") {
+    if (p.scores["誤答"] === 1) {
+      p.scores["正解"] = 0;
+    }
+    if (p.scores["誤答"] === 2) {
       p.status = "out";
     }
   }
 
-  /* ====== 勝ち抜け設定モード判定 ====== */
-  function checkWinSettingMode() {
-    if (winners.length >= winCount) return;
-
-    const alive = players.filter((p, i) =>
-      p.status !== "out" && !winners.includes(i)
-    ).length;
-
-    if (maxProblems && problemCount >= maxProblems && winners.length < winCount) {
-      winSettingMode = true;
-    }
-
-    if (alive === winCount - winners.length) {
-      winSettingMode = true;
-    }
-
-    document.getElementById("winMode").textContent =
-      winSettingMode ? "勝ち抜け設定モード" : "";
+  if (preset === "freeze" && itemName === "誤答") {
+    p.freezeStop = (p.scores["誤答"] || 0) + 1;
   }
 
-  /* ====== スコア処理 ====== */
-  function changeScore(playerIndex, itemName, delta) {
-    if (finished || winSettingMode) return;
+  checkLose(playerIndex);
+  checkWinner(playerIndex);
 
-    const p = players[playerIndex];
-    const preset = getPreset();
+  problemCount++;
+  applyFreezeDecay();
+  updateGauge();
+  render();
+  updateCurrentSettings();
+  checkWinSettingMode();
 
-    // Stop 中はここでも保険として無効化（通常はキーハンドラで弾いている）
-    if (preset === "freeze" && p.freezeStop > 0) return;
+  const now = new Date().toLocaleTimeString();
+  logs.push(`${now} ${p.name} ${itemName} +${delta}`);
+  localStorage.setItem("logs", JSON.stringify(logs));
 
-    // Undo 用に現在状態を保存
-    const prevData = {
-      type: "score",
-      playerIndex,
-      prevScores: JSON.parse(JSON.stringify(p.scores || {})),
-      prevStatus: p.status,
-      prevFreeze: p.freezeStop,
-      prevWinners: [...winners],
-      problemDelta: -1
-    };
-    history.push(prevData);
+  localStorage.setItem("players", JSON.stringify(players));
+  localStorage.setItem("problemCount", problemCount);
+  localStorage.setItem("winners", JSON.stringify(winners));
+}
 
-    if (typeof p.scores[itemName] !== "number") {
-      p.scores[itemName] = 0;
-    }
+/* ====== スルー ====== */
+function noAnswer() {
+  if (finished || winSettingMode) return;
 
-    // 通常加算
-    p.scores[itemName] += delta;
+  const prevData = {
+    type: "noAnswer",
+    prevFreezeAll: players.map(p => p.freezeStop),
+    problemDelta: -1
+  };
+  history.push(prevData);
 
-    // Up-Down 誤答
-    if (preset === "updown" && itemName === "誤答") {
-      if (p.scores["誤答"] === 1) {
-        p.scores["正解"] = 0;
-      }
-      if (p.scores["誤答"] === 2) {
-        p.status = "out";
-      }
-    }
+  problemCount++;
+  applyFreezeDecay();
+  updateGauge();
+  render();
+  updateCurrentSettings();
+  checkWinSettingMode();
 
-    // Freeze 誤答：誤答加算後の値をベースに +1 セット → その問題の decay で -1 されて誤答数と一致
-    if (preset === "freeze" && itemName === "誤答") {
-      p.freezeStop = (p.scores["誤答"] || 0) + 1;
-    }
+  const now = new Date().toLocaleTimeString();
+  logs.push(`${now} スルー`);
+  localStorage.setItem("logs", JSON.stringify(logs));
 
-    checkLose(playerIndex);
-    checkWinner(playerIndex);
+  localStorage.setItem("problemCount", problemCount);
+}
 
-    problemCount++;
-    applyFreezeDecay();
-    updateGauge();
-    render();
-    updateCurrentSettings();
-    checkWinSettingMode();
+/* ====== Undo ====== */
+function undo() {
+  if (finished || winSettingMode) return;
 
-    localStorage.setItem("players", JSON.stringify(players));
-    localStorage.setItem("problemCount", problemCount);
-    localStorage.setItem("winners", JSON.stringify(winners));
+  const last = history.pop();
+  if (!last) return;
+
+  if (last.type === "score") {
+    const p = players[last.playerIndex];
+    p.scores = last.prevScores;
+    p.status = last.prevStatus;
+    p.freezeStop = last.prevFreeze;
+    winners = last.prevWinners;
+    problemCount += last.problemDelta;
+  } else if (last.type === "noAnswer") {
+    problemCount += last.problemDelta;
+    players.forEach((p, i) => {
+      p.freezeStop = last.prevFreezeAll[i];
+    });
   }
 
-  /* ====== スルー ====== */
-  function noAnswer() {
-    if (finished || winSettingMode) return;
+  finished = false;
 
-    // Undo 用に freezeStop の状態を保存
-    const prevData = {
-      type: "noAnswer",
-      prevFreezeAll: players.map(p => p.freezeStop),
-      problemDelta: -1
-    };
-    history.push(prevData);
+  updateGauge();
+  render();
+  updateCurrentSettings();
+  checkWinSettingMode();
 
-    problemCount++;
-    applyFreezeDecay();
-    updateGauge();
-    render();
-    updateCurrentSettings();
-    checkWinSettingMode();
+  const now = new Date().toLocaleTimeString();
+  logs.push(`${now} Undo`);
+  localStorage.setItem("logs", JSON.stringify(logs));
 
-    localStorage.setItem("problemCount", problemCount);
-  }
+  localStorage.setItem("players", JSON.stringify(players));
+  localStorage.setItem("problemCount", problemCount);
+  localStorage.setItem("winners", JSON.stringify(winners));
+}
 
-  /* ====== Undo ====== */
-  function undo() {
-    if (finished || winSettingMode) return;
+/* ====== キーボード操作 ====== */
+document.addEventListener("keydown", (e) => {
+  if (winSettingMode) return;
+  if (finished) return;
 
-    const last = history.pop();
-    if (!last) return;
+  const code = e.code;
+  const isNumpad = code.startsWith("Numpad");
 
-    if (last.type === "score") {
-      const p = players[last.playerIndex];
-      p.scores = last.prevScores;
-      p.status = last.prevStatus;
-      p.freezeStop = last.prevFreeze;
-      winners = last.prevWinners;
-      problemCount += last.problemDelta; // -1
-    } else if (last.type === "noAnswer") {
-      // Insert（スルー）を取り消し
-      problemCount += last.problemDelta; // -1
-      players.forEach((p, i) => {
-        p.freezeStop = last.prevFreezeAll[i];
-      });
-    }
-
-    finished = false;
-
-    updateGauge();
-    render();
-    updateCurrentSettings();
-    checkWinSettingMode();
-
-    localStorage.setItem("players", JSON.stringify(players));
-    localStorage.setItem("problemCount", problemCount);
-    localStorage.setItem("winners", JSON.stringify(winners));
-  }
-
-  /* ====== 勝ち抜け設定モード（テンキー） ====== */
-  document.addEventListener("keydown", (e) => {
-    if (!winSettingMode) return;
-
-    if (!e.code.startsWith("Numpad")) return;
-
+  if (isNumpad) {
     e.preventDefault();
 
     let index = null;
-    if (e.code === "Numpad0") index = 9;
+    if (code === "Numpad0") index = 9;
     else {
-      const num = Number(e.code.replace("Numpad", ""));
+      const num = Number(code.replace("Numpad", ""));
       if (num >= 1 && num <= 9) index = num - 1;
     }
 
-    if (index === null || index >= players.length) return;
-    if (winners.includes(index)) return;
-
-    winners.push(index);
-    localStorage.setItem("winners", JSON.stringify(winners));
-
-    if (winners.length >= winCount) {
-      winSettingMode = false;
-      finished = true;
+    if (index !== null && index < players.length) {
+      const p = players[index];
+      if (p.status !== "out" && !winners.includes(index) && p.freezeStop === 0) {
+        if (e.ctrlKey) changeScore(index, "誤答", +1);
+        else changeScore(index, "正解", +1);
+      }
     }
-
-    render();
-    updateCurrentSettings();
-    checkWinSettingMode();
-  });
-
-  /* ====== リセット ====== */
-  function resetAll() {
-    const ok = window.confirm("全データをリセットします。よろしいですか？");
-    if (!ok) return;
-
-    players.forEach(p => {
-      p.scores = {};
-      p.status = "alive";
-      p.freezeStop = 0;
-    });
-
-    history = [];
-    logs = [];
-    problemCount = 0;
-    finished = false;
-    winners = [];
-    winSettingMode = false;
-
-    localStorage.setItem("players", JSON.stringify(players));
-    localStorage.setItem("problemCount", problemCount);
-    localStorage.setItem("logs", JSON.stringify(logs));
-    localStorage.setItem("winners", JSON.stringify(winners));
-
-    updateGauge();
-    render();
-    updateCurrentSettings();
-    checkWinSettingMode();
+    return;
   }
 
-  /* ====== キーボード操作 ====== */
-  document.addEventListener("keydown", (e) => {
-    if (winSettingMode) return;
-    if (finished) return;
+  if (e.code === "Insert") {
+    e.preventDefault();
+    noAnswer();
+    return;
+  }
 
-    const code = e.code;
-    const isNumpad = code.startsWith("Numpad");
+  if (e.code === "Delete") {
+    e.preventDefault();
+    undo();
+    return;
+  }
+});
 
-    if (isNumpad) {
-      e.preventDefault();
+/* ====== localStorage 監視 ====== */
+window.addEventListener("storage", () => {
+  players      = JSON.parse(localStorage.getItem("players")      || "[]");
+  scoreItems   = JSON.parse(localStorage.getItem("scoreItems")   || "[]");
+  logs         = JSON.parse(localStorage.getItem("logs")         || "[]");
+  problemCount = Number(localStorage.getItem("problemCount")     || 0);
+  maxProblems  = Number(localStorage.getItem("maxProblems")      || 0);
+  winScore     = Number(localStorage.getItem("winScore")         || 0);
+  winCount     = Number(localStorage.getItem("winCount")         || 0);
+  loseWrong    = Number(localStorage.getItem("loseWrong")        || 0);
+  winners      = JSON.parse(localStorage.getItem("winners")      || "[]");
 
-      let index = null;
-      if (code === "Numpad0") index = 9;
-      else {
-        const num = Number(code.replace("Numpad", ""));
-        if (num >= 1 && num <= 9) index = num - 1;
-      }
+  finished = false;
 
-      if (index !== null && index < players.length) {
-        const p = players[index];
-        if (p.status !== "out" && !winners.includes(index) && p.freezeStop === 0) {
-          if (e.ctrlKey) changeScore(index, "誤答", +1);
-          else changeScore(index, "正解", +1);
-        }
-      }
-      return;
-    }
-
-    if (e.code === "Insert") {
-      e.preventDefault();
-      noAnswer();
-      return;
-    }
-
-    if (e.code === "Delete") {
-      e.preventDefault();
-      undo();
-      return;
-    }
-  });
-
-  /* ====== localStorage 監視 ====== */
-  window.addEventListener("storage", () => {
-    players      = JSON.parse(localStorage.getItem("players")      || "[]");
-    scoreItems   = JSON.parse(localStorage.getItem("scoreItems")   || "[]");
-    logs         = JSON.parse(localStorage.getItem("logs")         || "[]");
-    problemCount = Number(localStorage.getItem("problemCount")     || 0);
-    maxProblems  = Number(localStorage.getItem("maxProblems")      || 0);
-    winScore     = Number(localStorage.getItem("winScore")         || 0);
-    winCount     = Number(localStorage.getItem("winCount")         || 0);
-    loseWrong    = Number(localStorage.getItem("loseWrong")        || 0);
-    winners      = JSON.parse(localStorage.getItem("winners")      || "[]");
-
-    finished = false;
-
-    drawGaugeTicks();
-    updateGauge();
-    render();
-    updateCurrentSettings();
-    checkWinSettingMode();
-  });
-
-  /* 初期描画 */
   drawGaugeTicks();
   updateGauge();
   render();
   updateCurrentSettings();
   checkWinSettingMode();
+});
+
+/* ====== 初期描画 ====== */
+drawGaugeTicks();
+updateGauge();
+render();
+updateCurrentSettings();
+checkWinSettingMode();
 </script>
 
 </body>
