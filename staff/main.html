@@ -470,11 +470,40 @@ function undo() {
 
 /* ====== キーボード操作 ====== */
 document.addEventListener("keydown", (e) => {
-  if (winSettingMode) return;
-  if (finished) return;
-
   const code = e.code;
   const isNumpad = code.startsWith("Numpad");
+
+  // ★ 勝ち抜け設定モード中の操作（順位付け）
+  if (winSettingMode) {
+    if (!isNumpad) return;
+    e.preventDefault();
+
+    let index = null;
+    if (code === "Numpad0") index = 9;
+    else {
+      const num = Number(code.replace("Numpad", ""));
+      if (num >= 1 && num <= 9) index = num - 1;
+    }
+
+    if (index === null || index >= players.length) return;
+    if (winners.includes(index)) return;
+
+    winners.push(index);
+    localStorage.setItem("winners", JSON.stringify(winners));
+
+    if (winners.length >= winCount) {
+      winSettingMode = false;
+      finished = true;
+    }
+
+    render();
+    updateCurrentSettings();
+    checkWinSettingMode();
+    return;
+  }
+
+  // ★ ここから通常モード
+  if (finished) return;
 
   if (isNumpad) {
     e.preventDefault();
@@ -496,13 +525,13 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  if (e.code === "Insert") {
+  if (code === "Insert") {
     e.preventDefault();
     noAnswer();
     return;
   }
 
-  if (e.code === "Delete") {
+  if (code === "Delete") {
     e.preventDefault();
     undo();
     return;
