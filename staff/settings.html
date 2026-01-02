@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Settings v3</title>
+  <title>Settings v4</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -34,7 +34,7 @@
 
 <body>
 
-<h2>設定画面（Settings v2）</h2>
+<h2>設定画面（Settings v4）</h2>
 
 <div style="margin-bottom:20px;">
   <a href="main.html">← メイン画面へ戻る</a>
@@ -81,11 +81,12 @@
   <button onclick="saveWinLoseSettings()">保存</button>
 </div>
 
-<!-- プレイヤー追加 -->
+<!-- プレイヤー編集（v4） -->
 <div class="block">
-  <h3>プレイヤー追加</h3>
-  <input id="playerName" placeholder="プレイヤー名">
-  <button onclick="addPlayer()">追加</button>
+  <h3>プレイヤー編集（順位,都道府県,名前）</h3>
+  <textarea id="playerEditor" style="width:350px; height:200px;"></textarea>
+  <br>
+  <button onclick="savePlayers()">保存</button>
 </div>
 
 <!-- Log -->
@@ -177,21 +178,36 @@
     alert("勝ち抜け・脱落設定を保存しました");
   }
 
-  /* ====== プレイヤー追加 ====== */
-  function addPlayer() {
-    const name = document.getElementById("playerName").value.trim();
-    if (!name) return;
+  /* ====== プレイヤー編集（v4） ====== */
+  function savePlayers() {
+    const text = document.getElementById("playerEditor").value.trim();
+    if (!text) return;
 
-    players.push({
-      name,
-      scores: {},
-      status: "alive",
-      freezeStop: 0
-    });
+    const lines = text.split("\n");
+    const newPlayers = [];
 
+    for (const line of lines) {
+      const parts = line.split(",");
+      if (parts.length < 3) continue;
+
+      const rank = Number(parts[0].trim());
+      const pref = parts[1].trim();
+      const name = parts[2].trim();
+
+      newPlayers.push({
+        rank,
+        prefecture: pref,
+        name,
+        scores: {},
+        status: "alive",
+        freezeStop: 0
+      });
+    }
+
+    players = newPlayers;
     localStorage.setItem("players", JSON.stringify(players));
-    document.getElementById("playerName").value = "";
-    alert("プレイヤーを追加しました");
+
+    alert("プレイヤー情報を更新しました");
   }
 
   /* ====== Log 表示 ====== */
@@ -212,11 +228,17 @@
     document.getElementById("winScore").value  = winScore;
     document.getElementById("winCount").value  = winCount;
     document.getElementById("loseWrong").value = loseWrong;
+
+    // プレイヤー編集欄に現在の players を反映
+    const text = players
+      .map(p => `${p.rank || ""},${p.prefecture || ""},${p.name}`)
+      .join("\n");
+    document.getElementById("playerEditor").value = text;
   }
 
   loadInitialValues();
   renderLog();
-  
+
   /* ====== main.html からの log 更新を監視 ====== */
   window.addEventListener("storage", () => {
     logs = JSON.parse(localStorage.getItem("logs") || "[]");
