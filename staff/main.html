@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Main v30.1</title>
+  <title>Score Main v31</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -18,11 +18,11 @@
       border-radius: 10px;
       background: #fafafa;
       width: 9vw;
-      height: 300px;
+      height: 330px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
     }
     .player.out { opacity: 0.4; background: #eee; }
 
@@ -30,14 +30,15 @@
       writing-mode: vertical-rl;
       text-orientation: upright;
       font-weight: 900;
+      line-height: 1.1;
       height: 180px;
       width: 40px;
+      white-space: nowrap;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 36px;
       transform-origin: center center;
-      white-space: nowrap;
     }
 
     .player-status {
@@ -112,7 +113,7 @@
 
 <body>
 
-<h2>Score Main v29</h2>
+<h2>Score Main v31</h2>
 
 <h3 id="problemCountDisplay">問題数: 0</h3>
 <div id="winMode"></div>
@@ -167,6 +168,22 @@ function getPreset() {
   return localStorage.getItem("currentRule") || "";
 }
 
+/* ====== 序数（1st,2nd,3rd...） ====== */
+function ordinal(n) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+/* ====== 順位バッジ色 ====== */
+function rankColor(rank) {
+  if (rank === 1) return { bg: "#FFD700", fg: "#000" };
+  if (rank === 2) return { bg: "#C0C0C0", fg: "#000" };
+  if (rank === 3 || rank === 4) return { bg: "#CC0000", fg: "#FFF" };
+  if (rank >= 5 && rank <= 10) return { bg: "#0066CC", fg: "#FFF" };
+  return { bg: "#009900", fg: "#FFF" };
+}
+
 /* ====== ゲージ ====== */
 function drawGaugeTicks() {
   const container = document.getElementById("gaugeContainer");
@@ -207,7 +224,7 @@ function updateGauge() {
   icon.style.transform = `translateX(${x}px)`;
 }
 
-/* ====== プレイヤー描画 ====== */
+/* ====== 名前縮小 ====== */
 function adjustNameSize(nameDiv) {
   const maxHeight = 180;
   nameDiv.style.transform = "scaleY(1)";
@@ -219,6 +236,7 @@ function adjustNameSize(nameDiv) {
   }
 }
 
+/* ====== 合計点 ====== */
 function calcTotal(player) {
   let total = 0;
   scoreItems.forEach(item => {
@@ -229,83 +247,80 @@ function calcTotal(player) {
   return total;
 }
 
+/* ====== プレイヤー描画 ====== */
 function render() {
   const container = document.getElementById("players");
   container.innerHTML = "";
 
   players.forEach((p, idx) => {
-  const div = document.createElement("div");
-  div.className = "player";
-  if (p.status === "out") div.classList.add("out");
+    const div = document.createElement("div");
+    div.className = "player";
+    if (p.status === "out") div.classList.add("out");
 
-  /* --- ① 順位バッジ（背景色つき） --- */
-  const rankDiv = document.createElement("div");
-  rankDiv.style.fontSize = "18px";
-  rankDiv.style.fontWeight = "bold";
-  rankDiv.style.padding = "2px 6px";
-  rankDiv.style.borderRadius = "6px";
-  rankDiv.style.display = "inline-block";
-  rankDiv.style.marginBottom = "4px";
+    /* --- ① 順位バッジ --- */
+    const rankDiv = document.createElement("div");
+    rankDiv.style.fontSize = "18px";
+    rankDiv.style.fontWeight = "bold";
+    rankDiv.style.padding = "2px 6px";
+    rankDiv.style.borderRadius = "6px";
+    rankDiv.style.display = "inline-block";
 
-  if (p.rank) {
-    const c = rankColor(p.rank);
-    rankDiv.style.background = c.bg;
-    rankDiv.style.color = c.fg;
-    rankDiv.textContent = ordinal(p.rank);
-  } else {
-    rankDiv.textContent = "";
-  }
-  div.appendChild(rankDiv);
+    if (p.rank) {
+      const c = rankColor(p.rank);
+      rankDiv.style.background = c.bg;
+      rankDiv.style.color = c.fg;
+      rankDiv.textContent = ordinal(p.rank);
+    }
+    div.appendChild(rankDiv);
 
-  /* --- ② 都道府県（横書き） --- */
-  const prefDiv = document.createElement("div");
-  prefDiv.style.fontSize = "14px";
-  prefDiv.style.marginBottom = "4px";
-  prefDiv.textContent = p.prefecture || "";
-  div.appendChild(prefDiv);
+    /* --- ② 都道府県 --- */
+    const prefDiv = document.createElement("div");
+    prefDiv.style.fontSize = "14px";
+    prefDiv.textContent = p.prefecture || "";
+    div.appendChild(prefDiv);
 
-  /* --- ③ 名前（縦書き） --- */
-  const nameDiv = document.createElement("div");
-  nameDiv.className = "player-name";
-  nameDiv.textContent = p.name;
-  div.appendChild(nameDiv);
-  requestAnimationFrame(() => adjustNameSize(nameDiv));
+    /* --- ③ 名前（縦書き） --- */
+    const nameDiv = document.createElement("div");
+    nameDiv.className = "player-name";
+    nameDiv.textContent = p.name;
+    div.appendChild(nameDiv);
+    requestAnimationFrame(() => adjustNameSize(nameDiv));
 
-  /* --- ④ 状態表示（順位 > 脱落 > Stop） --- */
-  const statusDiv = document.createElement("div");
-  statusDiv.className = "player-status";
+    /* --- ④ 状態表示（順位 > 脱落 > Stop） --- */
+    const statusDiv = document.createElement("div");
+    statusDiv.className = "player-status";
 
-  if (winners.includes(idx)) {
-    statusDiv.textContent = `${winners.indexOf(idx) + 1}位`;
-  } else if (p.status === "out") {
-    statusDiv.textContent = "脱落";
-  } else if (getPreset() === "freeze" && p.freezeStop > 0) {
-    statusDiv.textContent = `Stop ${p.freezeStop}`;
-  } else {
-    statusDiv.textContent = "";
-  }
-  div.appendChild(statusDiv);
+    if (winners.includes(idx)) {
+      statusDiv.textContent = `${winners.indexOf(idx) + 1}位`;
+    } else if (p.status === "out") {
+      statusDiv.textContent = "脱落";
+    } else if (getPreset() === "freeze" && p.freezeStop > 0) {
+      statusDiv.textContent = `Stop ${p.freezeStop}`;
+    } else {
+      statusDiv.textContent = "";
+    }
+    div.appendChild(statusDiv);
 
-  /* --- ⑤ スコアライン（既存） --- */
-  const scoreLine = document.createElement("div");
-  scoreLine.className = "player-scoreline";
+    /* --- ⑤ スコアライン --- */
+    const scoreLine = document.createElement("div");
+    scoreLine.className = "player-scoreline";
 
-  const total = calcTotal(p);
-  const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
+    const total = calcTotal(p);
+    const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
 
-  scoreLine.innerHTML = `
-    <span class="player-score-total">${total}</span>
-    <span class="player-score-dash"> - </span>
-    <span class="player-score-wrong">${wrong}</span>
-  `;
-  div.appendChild(scoreLine);
+    scoreLine.innerHTML = `
+      <span class="player-score-total">${total}</span>
+      <span class="player-score-dash"> - </span>
+      <span class="player-score-wrong">${wrong}</span>
+    `;
+    div.appendChild(scoreLine);
 
-  container.appendChild(div);
-});
+    container.appendChild(div);
+  });
+
   document.getElementById("problemCountDisplay").textContent =
     `問題数: ${problemCount}`;
 }
-
 /* ====== 設定表示 ====== */
 function updateCurrentSettings() {
   document.getElementById("cs_rule").textContent      = getPreset() || "---";
@@ -315,7 +330,8 @@ function updateCurrentSettings() {
   document.getElementById("cs_winCount").textContent  = winCount;
   document.getElementById("cs_loseWrong").textContent = loseWrong;
 }
-  /* ====== Freeze 減衰 ====== */
+
+/* ====== Freeze 減衰 ====== */
 function applyFreezeDecay() {
   if (getPreset() !== "freeze") return;
   players.forEach(p => {
@@ -355,7 +371,7 @@ function checkLose(playerIndex) {
     localStorage.setItem("logs", JSON.stringify(logs));
   }
 }
-  
+
 /* ====== 勝ち抜け設定モード判定 ====== */
 function checkWinSettingMode() {
   if (winners.length >= winCount) return;
@@ -422,6 +438,7 @@ function changeScore(playerIndex, itemName, delta) {
 
   logs.push(`${now} ${p.name} ${itemName} +${delta} (${seikai}-${gotou})`);
   localStorage.setItem("logs", JSON.stringify(logs));
+
   localStorage.setItem("players", JSON.stringify(players));
   localStorage.setItem("problemCount", problemCount);
   localStorage.setItem("winners", JSON.stringify(winners));
@@ -489,12 +506,12 @@ function undo() {
   localStorage.setItem("winners", JSON.stringify(winners));
 }
 
-  /* ====== キーボード操作 ====== */
+/* ====== キーボード操作 ====== */
 document.addEventListener("keydown", (e) => {
   const code = e.code;
   const isNumpad = code.startsWith("Numpad");
 
-  /* --- 勝ち抜け設定モード中：順位付け --- */
+  /* --- 勝ち抜け設定モード：順位付け --- */
   if (winSettingMode) {
     if (!isNumpad) return;
     e.preventDefault();
@@ -587,7 +604,6 @@ function resetAll() {
   updateCurrentSettings();
   checkWinSettingMode();
 
-  /* ★ main 自身にも storage イベントを発火させる（画面更新のため） */
   window.dispatchEvent(new Event("storage"));
 }
 
