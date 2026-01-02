@@ -234,46 +234,74 @@ function render() {
   container.innerHTML = "";
 
   players.forEach((p, idx) => {
-    const div = document.createElement("div");
-    div.className = "player";
-    if (p.status === "out") div.classList.add("out");
+  const div = document.createElement("div");
+  div.className = "player";
+  if (p.status === "out") div.classList.add("out");
 
-    const nameDiv = document.createElement("div");
-    nameDiv.className = "player-name";
-    nameDiv.textContent = p.name;
-    div.appendChild(nameDiv);
-    requestAnimationFrame(() => adjustNameSize(nameDiv));
+  /* --- ① 順位バッジ（背景色つき） --- */
+  const rankDiv = document.createElement("div");
+  rankDiv.style.fontSize = "18px";
+  rankDiv.style.fontWeight = "bold";
+  rankDiv.style.padding = "2px 6px";
+  rankDiv.style.borderRadius = "6px";
+  rankDiv.style.display = "inline-block";
+  rankDiv.style.marginBottom = "4px";
 
-    const statusDiv = document.createElement("div");
-    statusDiv.className = "player-status";
+  if (p.rank) {
+    const c = rankColor(p.rank);
+    rankDiv.style.background = c.bg;
+    rankDiv.style.color = c.fg;
+    rankDiv.textContent = ordinal(p.rank);
+  } else {
+    rankDiv.textContent = "";
+  }
+  div.appendChild(rankDiv);
 
-    if (winners.includes(idx)) {
-      statusDiv.textContent = `${winners.indexOf(idx) + 1}位`;
-      } else if (p.status === "out") {
-        statusDiv.textContent = "脱落";
-      } else if (getPreset() === "freeze" && p.freezeStop > 0) {
-        statusDiv.textContent = `Stop ${p.freezeStop}`;
-      } else {
-        statusDiv.textContent = "";
-    }
-    div.appendChild(statusDiv);
+  /* --- ② 都道府県（横書き） --- */
+  const prefDiv = document.createElement("div");
+  prefDiv.style.fontSize = "14px";
+  prefDiv.style.marginBottom = "4px";
+  prefDiv.textContent = p.prefecture || "";
+  div.appendChild(prefDiv);
 
-    const scoreLine = document.createElement("div");
-    scoreLine.className = "player-scoreline";
+  /* --- ③ 名前（縦書き） --- */
+  const nameDiv = document.createElement("div");
+  nameDiv.className = "player-name";
+  nameDiv.textContent = p.name;
+  div.appendChild(nameDiv);
+  requestAnimationFrame(() => adjustNameSize(nameDiv));
 
-    const total = calcTotal(p);
-    const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
+  /* --- ④ 状態表示（順位 > 脱落 > Stop） --- */
+  const statusDiv = document.createElement("div");
+  statusDiv.className = "player-status";
 
-    scoreLine.innerHTML = `
-      <span class="player-score-total">${total}</span>
-      <span class="player-score-dash"> - </span>
-      <span class="player-score-wrong">${wrong}</span>
-    `;
-    div.appendChild(scoreLine);
+  if (winners.includes(idx)) {
+    statusDiv.textContent = `${winners.indexOf(idx) + 1}位`;
+  } else if (p.status === "out") {
+    statusDiv.textContent = "脱落";
+  } else if (getPreset() === "freeze" && p.freezeStop > 0) {
+    statusDiv.textContent = `Stop ${p.freezeStop}`;
+  } else {
+    statusDiv.textContent = "";
+  }
+  div.appendChild(statusDiv);
 
-    container.appendChild(div);
-  });
+  /* --- ⑤ スコアライン（既存） --- */
+  const scoreLine = document.createElement("div");
+  scoreLine.className = "player-scoreline";
 
+  const total = calcTotal(p);
+  const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
+
+  scoreLine.innerHTML = `
+    <span class="player-score-total">${total}</span>
+    <span class="player-score-dash"> - </span>
+    <span class="player-score-wrong">${wrong}</span>
+  `;
+  div.appendChild(scoreLine);
+
+  container.appendChild(div);
+});
   document.getElementById("problemCountDisplay").textContent =
     `問題数: ${problemCount}`;
 }
