@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Main v30</title>
+  <title>Score Main v30.1</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -389,9 +389,11 @@ function changeScore(playerIndex, itemName, delta) {
   checkWinSettingMode();
 
   const now = new Date().toLocaleTimeString();
-  logs.push(`${now} ${p.name} ${itemName} +${delta}`);
-  localStorage.setItem("logs", JSON.stringify(logs));
+  const seikai = p.scores["正解"] || 0;
+  const gotou  = p.scores["誤答"] || 0;
 
+  logs.push(`${now} ${p.name} ${itemName} +${delta} (${seikai}-${gotou})`);
+  localStorage.setItem("logs", JSON.stringify(logs));
   localStorage.setItem("players", JSON.stringify(players));
   localStorage.setItem("problemCount", problemCount);
   localStorage.setItem("winners", JSON.stringify(winners));
