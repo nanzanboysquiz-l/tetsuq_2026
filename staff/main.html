@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Main v29</title>
+  <title>Score Main v30</title>
   <style>
     body { font-family: sans-serif; margin: 20px; }
 
@@ -303,6 +303,10 @@ function checkWinner(playerIndex) {
   if (total >= winScore && !winners.includes(playerIndex)) {
     winners.push(playerIndex);
     localStorage.setItem("winners", JSON.stringify(winners));
+
+    const now = new Date().toLocaleTimeString();
+    logs.push(`${now} ${p.name} が勝ち抜け（${winners.length}位）`);
+    localStorage.setItem("logs", JSON.stringify(logs));
   }
 
   if (winners.length >= winCount) {
@@ -314,9 +318,16 @@ function checkWinner(playerIndex) {
 function checkLose(playerIndex) {
   const p = players[playerIndex];
   const wrong = p.scores["誤答"] || 0;
-  if (wrong >= loseWrong) p.status = "out";
-}
 
+  if (wrong >= loseWrong && p.status !== "out") {
+    p.status = "out";
+
+    const now = new Date().toLocaleTimeString();
+    logs.push(`${now} ${p.name} が脱落`);
+    localStorage.setItem("logs", JSON.stringify(logs));
+  }
+}
+  
 /* ====== 勝ち抜け設定モード判定 ====== */
 function checkWinSettingMode() {
   if (winners.length >= winCount) return;
