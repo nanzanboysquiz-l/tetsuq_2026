@@ -249,10 +249,12 @@ function render() {
 
     if (winners.includes(idx)) {
       statusDiv.textContent = `${winners.indexOf(idx) + 1}位`;
-    } else if (getPreset() === "freeze" && p.freezeStop > 0) {
-      statusDiv.textContent = `Stop ${p.freezeStop}`;
-    } else if (p.status === "out") {
-      statusDiv.textContent = "脱落";
+      } else if (p.status === "out") {
+        statusDiv.textContent = "脱落";
+      } else if (getPreset() === "freeze" && p.freezeStop > 0) {
+        statusDiv.textContent = `Stop ${p.freezeStop}`;
+      } else {
+        statusDiv.textContent = "";
     }
     div.appendChild(statusDiv);
 
