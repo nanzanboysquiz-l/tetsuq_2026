@@ -2,29 +2,64 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Main v31</title>
+  <title>Score Main N2 v1</title>
   <style>
-    body { font-family: sans-serif; margin: 20px; }
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f0f0f0;
+    }
+
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      padding: 10px 20px;
+      border-bottom: 2px solid #ccc;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    #problemCountDisplay {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
 
     #players {
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 20px;
     }
 
     .player {
+      background: #fff;
       border: 1px solid #ccc;
-      padding: 10px;
       border-radius: 10px;
-      background: #fafafa;
-      width: 9vw;
-      height: 330px;
+      width: 120px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
     }
     .player.out { opacity: 0.4; background: #eee; }
+
+    .rank-badge {
+      font-size: 16px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .prefecture {
+      font-size: 14px;
+      color: #333;
+    }
 
     .player-name {
       writing-mode: vertical-rl;
@@ -41,114 +76,53 @@
       transform-origin: center center;
     }
 
-    .player-status {
-      font-size: 18px;
-      height: 28px;
+    .score-box {
+      background: #fff;
+      border: 1px solid #ccc;
+      width: 60px;
+      height: 30px;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    .player-scoreline {
-      font-size: 28px;
-      font-weight: bold;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .player-score-total { color: red; }
-    .player-score-dash  { color: black; }
-    .player-score-wrong { color: blue; }
-
-    #gaugeWrapper {
-      position: relative;
-      width: 100%;
-      margin-top: 120px;
-      margin-bottom: 20px;
-    }
-
-    #gaugeContainer {
-      width: 100%;
-      height: 20px;
-      background: #ddd;
-      border-radius: 10px;
-      position: relative;
-    }
-
-    #gaugeBar {
-      height: 100%;
-      width: 0%;
-      background: #4caf50;
-      border-radius: 10px;
-      transition: width 0.3s;
-    }
-
-    .gaugeTick {
-      position: absolute;
-      top: -4px;
-      width: 4px;
-      height: 28px;
-      background: #333;
-      border-radius: 2px;
-    }
-
-    #gaugeIcon {
-      position: absolute;
-      top: -110px;
-      width: 98px;
-      pointer-events: none;
-      display: none;
-      transition: transform 0.3s;
-    }
-
-    #winMode {
-      color: red;
-      font-weight: bold;
       font-size: 20px;
-      margin-bottom: 10px;
+      font-weight: bold;
+      color: #000;
+    }
+
+    .player-status {
+      font-size: 14px;
+      color: #333;
+      text-align: center;
+    }
+
+    #footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #333;
+      color: #fff;
+      font-size: 14px;
+      padding: 6px 10px;
+      white-space: nowrap;
+      overflow-x: auto;
     }
   </style>
 </head>
 
 <body>
 
-<h2>Score Main v31</h2>
-
-<h3 id="problemCountDisplay">問題数: 0</h3>
-<div id="winMode"></div>
-
-<div id="gaugeWrapper">
-  <img id="gaugeIcon" src="assets/images/tokuten/kyot10l.png">
-  <div id="gaugeContainer">
-    <div id="gaugeBar"></div>
-  </div>
-</div>
-
-<div id="currentSettings" style="
-  border:1px solid #ccc;
-  padding:10px;
-  margin-bottom:20px;
-  background:#f7f7f7;
-  width:300px;
-">
-  <div>ルール：<span id="cs_rule">---</span></div>
-  <div>限定問題数：<span id="cs_max">---</span></div>
-  <div>現在：<span id="cs_now">0</span> 問</div>
-  <div>勝ち抜け点：<span id="cs_winScore">---</span></div>
-  <div>勝ち抜け人数：<span id="cs_winCount">---</span></div>
-  <div>脱落誤答数：<span id="cs_loseWrong">---</span></div>
+<div id="header">
+  <div>普通</div>
+  <div id="problemCountDisplay">問題数: 0</div>
+  <div>4号車</div>
 </div>
 
 <div id="players"></div>
 
-<div style="margin-top:20px; display:flex; gap:10px;">
-  <a href="settings.html">設定画面へ</a>
-  <button onclick="resetAll()">リセット</button>
-</div>
+<div id="footer"></div>
 
 <script>
-/* ====== データ読み込み ====== */
 let players      = JSON.parse(localStorage.getItem("players")      || "[]");
 let scoreItems   = JSON.parse(localStorage.getItem("scoreItems")   || "[]");
 let logs         = JSON.parse(localStorage.getItem("logs")         || "[]");
@@ -168,14 +142,12 @@ function getPreset() {
   return localStorage.getItem("currentRule") || "";
 }
 
-/* ====== 序数（1st,2nd,3rd...） ====== */
 function ordinal(n) {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-/* ====== 順位バッジ色 ====== */
 function rankColor(rank) {
   if (rank === 1) return { bg: "#FFD700", fg: "#000" };
   if (rank === 2) return { bg: "#C0C0C0", fg: "#000" };
@@ -184,47 +156,6 @@ function rankColor(rank) {
   return { bg: "#009900", fg: "#FFF" };
 }
 
-/* ====== ゲージ ====== */
-function drawGaugeTicks() {
-  const container = document.getElementById("gaugeContainer");
-  container.querySelectorAll(".gaugeTick").forEach(e => e.remove());
-
-  if (!maxProblems) return;
-
-  for (let i = 5; i <= maxProblems; i += 5) {
-    const tick = document.createElement("div");
-    tick.className = "gaugeTick";
-    const ratio = i / maxProblems;
-    tick.style.left = `calc(${ratio * 100}% - 2px)`;
-    container.appendChild(tick);
-  }
-}
-
-function updateGauge() {
-  if (!maxProblems) {
-    document.getElementById("gaugeBar").style.width = "0%";
-    document.getElementById("gaugeIcon").style.display = "none";
-    return;
-  }
-
-  const ratio = Math.min(problemCount / maxProblems, 1);
-  document.getElementById("gaugeBar").style.width = (ratio * 100) + "%";
-
-  const icon = document.getElementById("gaugeIcon");
-  const containerWidth = document.getElementById("gaugeContainer").offsetWidth;
-  const iconWidth = icon.offsetWidth;
-
-  if (problemCount === 0) {
-    icon.style.display = "none";
-    return;
-  }
-  icon.style.display = "block";
-
-  const x = ratio * containerWidth - iconWidth;
-  icon.style.transform = `translateX(${x}px)`;
-}
-
-/* ====== 名前縮小 ====== */
 function adjustNameSize(nameDiv) {
   const maxHeight = 180;
   nameDiv.style.transform = "scaleY(1)";
@@ -236,7 +167,6 @@ function adjustNameSize(nameDiv) {
   }
 }
 
-/* ====== 合計点 ====== */
 function calcTotal(player) {
   let total = 0;
   scoreItems.forEach(item => {
@@ -247,7 +177,6 @@ function calcTotal(player) {
   return total;
 }
 
-/* ====== プレイヤー描画 ====== */
 function render() {
   const container = document.getElementById("players");
   container.innerHTML = "";
@@ -257,14 +186,8 @@ function render() {
     div.className = "player";
     if (p.status === "out") div.classList.add("out");
 
-    /* --- ① 順位バッジ --- */
     const rankDiv = document.createElement("div");
-    rankDiv.style.fontSize = "18px";
-    rankDiv.style.fontWeight = "bold";
-    rankDiv.style.padding = "2px 6px";
-    rankDiv.style.borderRadius = "6px";
-    rankDiv.style.display = "inline-block";
-
+    rankDiv.className = "rank-badge";
     if (p.rank) {
       const c = rankColor(p.rank);
       rankDiv.style.background = c.bg;
@@ -273,20 +196,22 @@ function render() {
     }
     div.appendChild(rankDiv);
 
-    /* --- ② 都道府県 --- */
     const prefDiv = document.createElement("div");
-    prefDiv.style.fontSize = "14px";
+    prefDiv.className = "prefecture";
     prefDiv.textContent = p.prefecture || "";
     div.appendChild(prefDiv);
 
-    /* --- ③ 名前（縦書き） --- */
     const nameDiv = document.createElement("div");
     nameDiv.className = "player-name";
     nameDiv.textContent = p.name;
     div.appendChild(nameDiv);
     requestAnimationFrame(() => adjustNameSize(nameDiv));
 
-    /* --- ④ 状態表示（順位 > 脱落 > Stop） --- */
+    const scoreBox = document.createElement("div");
+    scoreBox.className = "score-box";
+    scoreBox.textContent = calcTotal(p);
+    div.appendChild(scoreBox);
+
     const statusDiv = document.createElement("div");
     statusDiv.className = "player-status";
 
@@ -296,39 +221,26 @@ function render() {
       statusDiv.textContent = "脱落";
     } else if (getPreset() === "freeze" && p.freezeStop > 0) {
       statusDiv.textContent = `Stop ${p.freezeStop}`;
-    } else {
-      statusDiv.textContent = "";
     }
-    div.appendChild(statusDiv);
 
-    /* --- ⑤ スコアライン --- */
-    const scoreLine = document.createElement("div");
-    scoreLine.className = "player-scoreline";
-
-    const total = calcTotal(p);
     const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
+    if (wrong > 0) statusDiv.textContent += ` / 誤答${wrong}`;
 
-    scoreLine.innerHTML = `
-      <span class="player-score-total">${total}</span>
-      <span class="player-score-dash"> - </span>
-      <span class="player-score-wrong">${wrong}</span>
-    `;
-    div.appendChild(scoreLine);
-
+    div.appendChild(statusDiv);
     container.appendChild(div);
   });
 
   document.getElementById("problemCountDisplay").textContent =
     `問題数: ${problemCount}`;
 }
-/* ====== 設定表示 ====== */
-function updateCurrentSettings() {
-  document.getElementById("cs_rule").textContent      = getPreset() || "---";
-  document.getElementById("cs_max").textContent       = maxProblems || "---";
-  document.getElementById("cs_now").textContent       = problemCount;
-  document.getElementById("cs_winScore").textContent  = winScore;
-  document.getElementById("cs_winCount").textContent  = winCount;
-  document.getElementById("cs_loseWrong").textContent = loseWrong;
+  /* ====== 設定情報（フッター） ====== */
+function updateFooter() {
+  const rule = getPreset() || "---";
+  const text =
+    `ルール: ${rule} ｜ 限定: ${maxProblems || "---"}問 ｜ ` +
+    `勝ち抜け点: ${winScore} ｜ 勝ち抜け人数: ${winCount} ｜ 脱落誤答数: ${loseWrong}`;
+
+  document.getElementById("footer").textContent = text;
 }
 
 /* ====== Freeze 減衰 ====== */
@@ -385,9 +297,6 @@ function checkWinSettingMode() {
 
   if (alive === winCount - winners.length)
     winSettingMode = true;
-
-  document.getElementById("winMode").textContent =
-    winSettingMode ? "勝ち抜け設定モード" : "";
 }
 
 /* ====== スコア処理 ====== */
@@ -427,9 +336,8 @@ function changeScore(playerIndex, itemName, delta) {
 
   problemCount++;
   applyFreezeDecay();
-  updateGauge();
   render();
-  updateCurrentSettings();
+  updateFooter();
   checkWinSettingMode();
 
   const now = new Date().toLocaleTimeString();
@@ -457,9 +365,8 @@ function noAnswer() {
 
   problemCount++;
   applyFreezeDecay();
-  updateGauge();
   render();
-  updateCurrentSettings();
+  updateFooter();
   checkWinSettingMode();
 
   const now = new Date().toLocaleTimeString();
@@ -492,9 +399,8 @@ function undo() {
 
   finished = false;
 
-  updateGauge();
   render();
-  updateCurrentSettings();
+  updateFooter();
   checkWinSettingMode();
 
   const now = new Date().toLocaleTimeString();
@@ -511,7 +417,6 @@ document.addEventListener("keydown", (e) => {
   const code = e.code;
   const isNumpad = code.startsWith("Numpad");
 
-  /* --- 勝ち抜け設定モード：順位付け --- */
   if (winSettingMode) {
     if (!isNumpad) return;
     e.preventDefault();
@@ -535,12 +440,11 @@ document.addEventListener("keydown", (e) => {
     }
 
     render();
-    updateCurrentSettings();
+    updateFooter();
     checkWinSettingMode();
     return;
   }
 
-  /* --- 通常モード --- */
   if (finished) return;
 
   if (isNumpad) {
@@ -599,9 +503,8 @@ function resetAll() {
   localStorage.setItem("logs", JSON.stringify(logs));
   localStorage.setItem("winners", JSON.stringify(winners));
 
-  updateGauge();
   render();
-  updateCurrentSettings();
+  updateFooter();
   checkWinSettingMode();
 
   window.dispatchEvent(new Event("storage"));
@@ -621,18 +524,14 @@ window.addEventListener("storage", () => {
 
   finished = false;
 
-  drawGaugeTicks();
-  updateGauge();
   render();
-  updateCurrentSettings();
+  updateFooter();
   checkWinSettingMode();
 });
 
 /* ====== 初期描画 ====== */
-drawGaugeTicks();
-updateGauge();
 render();
-updateCurrentSettings();
+updateFooter();
 checkWinSettingMode();
 </script>
 
