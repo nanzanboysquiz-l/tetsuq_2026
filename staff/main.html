@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Main N2 v4</title>
+  <title>Score Main N2 v5</title>
   <style>
     body {
       margin: 0;
@@ -41,15 +41,15 @@
       color: white;
     }
 
-    /* ====== プレイヤー一覧 ====== */
+    /* ====== プレイヤー一覧（白背景） ====== */
     #players {
+      position: relative;
+      background: #fff;
+      padding: 20px;
       display: flex;
       justify-content: center;
       gap: 20px;
-      padding: 20px;
-      background: #fff;
       flex-wrap: wrap;
-      position: relative;
     }
 
     .player-card {
@@ -58,6 +58,7 @@
       align-items: center;
       width: 100px;
       padding: 10px 0;
+      background: transparent;
     }
 
     /* ====== 順位バッジ ====== */
@@ -94,14 +95,15 @@
       justify-content: center;
     }
 
-    /* ====== 画面全体を貫くオレンジ帯 ====== */
+    /* ====== 画面全体を貫くオレンジ帯（白背景内） ====== */
     #global-orange-bar {
-      position: relative;
+      position: absolute;
+      bottom: 48px; /* 状態欄の上に来るよう調整 */
+      left: 0;
       width: 100%;
       height: 38px;
       background: #f57c00;
-      margin-top: 10px;
-      margin-bottom: 0;
+      z-index: 1;
     }
     #global-orange-bar::before {
       content: "";
@@ -118,7 +120,7 @@
     /* ====== 合計点（白枠） ====== */
     .score-box {
       position: relative;
-      z-index: 2;
+      z-index: 3;
       background: #fff;
       border: 1px solid #ccc;
       width: 40px;
@@ -126,11 +128,13 @@
       text-align: center;
       font-size: 20px;
       font-weight: bold;
-      margin-top: -24px; /* 帯の中央に重ねる */
+      margin-top: -18px; /* 帯の中央に重ねる */
     }
 
     /* ====== 状態表示 ====== */
     .status {
+      position: relative;
+      z-index: 3;
       font-size: 12px;
       color: #333;
       margin-top: 6px; /* 帯の下に来る */
@@ -176,12 +180,11 @@
   <div class="car-number">4号車</div>
 </div>
 
-<div id="players"></div>
+<div id="players">
+  <!-- v5: 橙帯を白背景内に移動 -->
+  <div id="global-orange-bar"></div>
+</div>
 
-<!-- v4: 画面全体を貫くオレンジ帯 -->
-<div id="global-orange-bar"></div>
-
-<!-- v4: 設定リンク・リセット -->
 <div id="controls">
   <a href="settings.html" class="small-link">設定へ</a>
   <button onclick="resetAll()" class="small-btn">リセット</button>
@@ -247,7 +250,7 @@ function calcTotal(player) {
 
 function render() {
   const container = document.getElementById("players");
-  container.innerHTML = "";
+  container.innerHTML = '<div id="global-orange-bar"></div>';
 
   players.forEach((p, idx) => {
     const div = document.createElement("div");
@@ -269,7 +272,7 @@ function render() {
     div.appendChild(nameDiv);
     requestAnimationFrame(() => adjustNameSize(nameDiv));
 
-    /* v4: score-box は帯の上に重ねる */
+    /* v5: score-box は帯の中央に重ねる */
     const scoreBox = document.createElement("div");
     scoreBox.className = "score-box";
     scoreBox.textContent = calcTotal(p);
