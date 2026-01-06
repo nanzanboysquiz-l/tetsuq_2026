@@ -2,17 +2,17 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Score Main N2 v11 Railway Style</title>
+<title>Score Main N2 v10 Railway Style</title>
 
 <style>
-/* ====== 元CSS（変更なし部分は省略せず保持） ====== */
+/* ====== 全体 ====== */
 body {
   margin: 0;
   font-family: "Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;
   background: #eef2f3;
 }
 
-/* ====== ヘッダー（駅名表示化） ====== */
+/* ====== ヘッダー ====== */
 #header {
   display: block;
   text-align: center;
@@ -56,12 +56,12 @@ body {
   text-align: center;
 }
 
-/* ====== 駅名 ====== */
+/* ====== 名前（縦書き） ====== */
 .name-area {
   height: 160px;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 }
 
 .player-name {
@@ -72,21 +72,42 @@ body {
   transform-origin: center center;
 }
 
-/* ====== オレンジ帯 ====== */
+/* ====== オレンジ帯（左三角あり） ====== */
 #global-score-band {
   position: absolute;
   top: 220px;
   left: 0;
   width: 100%;
-  height: 36px;
-  background: #f57c00;
+  height: 38px;
   z-index: 1;
 }
 
-/* ====== スコア ====== */
+#global-score-band::after {
+  content: "";
+  position: absolute;
+  left: 36px;
+  top: 0;
+  width: calc(100% - 36px);
+  height: 100%;
+  background: #f57c00;
+}
+
+#global-score-band::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-top: 19px solid transparent;
+  border-bottom: 19px solid transparent;
+  border-right: 18px solid #f57c00;
+}
+
+/* ====== スコア（帯中央） ====== */
 .score-card {
   position: absolute;
-  top: 220px;
+  top: 224px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 2;
@@ -102,7 +123,7 @@ body {
   font-weight: bold;
 }
 
-/* ====== 状態 ====== */
+/* ====== 状態（帯の下） ====== */
 .status-card {
   margin-top: 120px;
   font-size: 14px;
@@ -143,8 +164,6 @@ body {
 </div>
 
 <script>
-/* ====== ↓↓↓ ここから元 txt の JS を1行も落とさず保持 ↓↓↓ ====== */
-
 /* ====== データ読み込み ====== */
 let players      = JSON.parse(localStorage.getItem("players")      || "[]");
 let scoreItems   = JSON.parse(localStorage.getItem("scoreItems")   || "[]");
@@ -581,8 +600,14 @@ window.addEventListener("storage", () => {
   updateFooter();
   checkWinSettingMode();
 });
-  
-/* ====== UI生成関数だけ差し替え ====== */
+
+/* ====== 初期描画 ====== */
+render();
+updateFooter();
+checkWinSettingMode();
+
+
+/* プレイヤーカード（名前のみ） */
 function createPlayerCard(p, idx) {
   const card = document.createElement("div");
   card.className = `player-card player-${idx}`;
@@ -601,6 +626,7 @@ function createPlayerCard(p, idx) {
   return card;
 }
 
+/* スコアカード（帯中央） */
 function createScoreCard(p, idx) {
   const card = document.createElement("div");
   card.className = `score-card player-${idx}`;
@@ -613,21 +639,26 @@ function createScoreCard(p, idx) {
   return card;
 }
 
+/* 状態カード（帯下・statusのみ） */
 function createStatusCard(p, idx) {
   const card = document.createElement("div");
   card.className = `status-card player-${idx}`;
 
   let text = "";
+
   if (winners.includes(idx)) {
-    text = `${winners.indexOf(idx) + 1}位 到着`;
+    text = `${winners.indexOf(idx) + 1}位`;
   } else if (p.status === "out") {
-    text = "通過不能";
+    text = "脱落";
   } else if (getPreset() === "freeze" && p.freezeStop > 0) {
     text = `Stop ${p.freezeStop}`;
   }
 
-  const wrong = p.scores["誤答"] || 0;
-  if (wrong > 0) text += ` / 誤答${wrong}`;
+  const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
+  if (wrong > 0) {
+    if (text) text += " / ";
+    text += `誤答${wrong}`;
+  }
 
   card.textContent = text;
   return card;
