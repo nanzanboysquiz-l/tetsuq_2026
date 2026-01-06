@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Main N2 v8</title>
+  <title>Score Main N2 v9</title>
   <style>
     body {
       margin: 0;
@@ -53,17 +53,22 @@
     }
 
     .player-card {
+      position: relative;
+      width: 100px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 100px;
-      padding: 10px 0;
-      background: transparent;
     }
 
     /* ====== 名前（絶対高さ + 縦縮小） ====== */
+    .name-area {
+      height: 160px; /* ← 常に 160px を基準に帯を置く */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     .player-name {
-      height: 160px; /* 絶対高さ */
       writing-mode: vertical-rl;
       text-orientation: upright;
       font-size: 32px;
@@ -75,10 +80,10 @@
       overflow: visible;
     }
 
-    /* ====== 全体を横断するスコア帯 ====== */
+    /* ====== 全体を横断する帯 ====== */
     #global-score-band {
       position: absolute;
-      top: var(--band-top, 220px); /* JS で動的に設定 */
+      top: 160px; /* ← 名前の最大高さに接する */
       left: 0;
       width: 100%;
       height: 38px;
@@ -96,7 +101,7 @@
       background: #f57c00;
     }
 
-    /* 左向き橙三角（高さ＝38px、横幅＝18px） */
+    /* 左向き三角 */
     #global-score-band::before {
       content: "";
       position: absolute;
@@ -109,32 +114,29 @@
       border-right: 18px solid #f57c00;
     }
 
-    /* ====== 白箱（帯の中央） ====== */
+    /* ====== 白箱（帯中央） ====== */
     .score-box {
       position: relative;
       z-index: 3;
-      background: #fff;
-      border: 1px solid #ccc;
+      margin-top: calc(160px + 4px); /* ← 帯中央に来る */
       width: 40px;
       height: 30px;
+      background: #fff;
+      border: 1px solid #ccc;
       text-align: center;
       font-size: 20px;
       font-weight: bold;
-
-      /* 帯の中央に重ねる */
-      margin-top: calc(var(--band-top) - 18px);
     }
 
-    /* ====== 状態表示 ====== */
-    .status {
-      position: relative;
-      z-index: 3;
-      font-size: 12px;
-      color: #333;
-
-      /* 帯の下に来るように */
-      margin-top: calc(var(--band-top) + 26px);
+    /* ====== 状態欄（帯の下端に接する） ====== */
+    .status-area {
+      margin-top: calc(160px + 38px + 6px);
       text-align: center;
+    }
+
+    .status {
+      font-size: 12px;
+      margin-top: 6px;
     }
 
     /* ====== 順位バッジ ====== */
@@ -197,7 +199,6 @@
 </div>
 
 <div id="players">
-  <!-- v8: 全体を横断する帯 -->
   <div id="global-score-band"></div>
 </div>
 
@@ -243,7 +244,7 @@ function rankColor(rank) {
   return "green";
 }
 
-/* ====== 名前の縦縮小 ====== */
+/* ====== 名前の縦縮小（v7 ロジック） ====== */
 function adjustNameSize(nameDiv) {
   const maxHeight = 160;
   nameDiv.style.transform = "scaleY(1)";
@@ -254,15 +255,6 @@ function adjustNameSize(nameDiv) {
     const scale = maxHeight / actual;
     nameDiv.style.transform = `scaleY(${scale})`;
   }
-}
-
-/* ====== 帯の位置を動的に決める ====== */
-function updateBandPosition() {
-  const nameHeight = 160;
-  const marginBelowName = 20;
-  const bandTop = nameHeight + marginBelowName;
-
-  document.documentElement.style.setProperty("--band-top", bandTop + "px");
 }
   /* ====== 合計点計算 ====== */
 function calcTotal(player) {
@@ -281,35 +273,44 @@ function render() {
   container.innerHTML = '<div id="global-score-band"></div>';
 
   players.forEach((p, idx) => {
-    const div = document.createElement("div");
-    div.className = "player-card";
+    const card = document.createElement("div");
+    card.className = "player-card";
 
     /* 順位 */
     const rankDiv = document.createElement("div");
     rankDiv.className = `rank-badge ${rankColor(p.rank)}`;
     rankDiv.textContent = p.rank ? ordinal(p.rank) : "";
-    div.appendChild(rankDiv);
+    card.appendChild(rankDiv);
 
     /* 都道府県 */
     const prefDiv = document.createElement("div");
     prefDiv.className = "prefecture";
     prefDiv.textContent = p.prefecture || "";
-    div.appendChild(prefDiv);
+    card.appendChild(prefDiv);
 
     /* 名前（絶対高さ + 縦縮小） */
+    const nameArea = document.createElement("div");
+    nameArea.className = "name-area";
+
     const nameDiv = document.createElement("div");
     nameDiv.className = "player-name";
     nameDiv.textContent = p.name;
-    div.appendChild(nameDiv);
+
+    nameArea.appendChild(nameDiv);
+    card.appendChild(nameArea);
+
     requestAnimationFrame(() => adjustNameSize(nameDiv));
 
-    /* 白箱（帯の中央） */
+    /* 白箱（帯中央） */
     const scoreBox = document.createElement("div");
     scoreBox.className = "score-box";
     scoreBox.textContent = calcTotal(p);
-    div.appendChild(scoreBox);
+    card.appendChild(scoreBox);
 
-    /* 状態欄（帯の下） */
+    /* 状態欄（帯の下端に接する） */
+    const statusArea = document.createElement("div");
+    statusArea.className = "status-area";
+
     const statusDiv = document.createElement("div");
     statusDiv.className = "status";
 
@@ -324,16 +325,14 @@ function render() {
     const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
     if (wrong > 0) statusDiv.textContent += ` / 誤答${wrong}`;
 
-    div.appendChild(statusDiv);
+    statusArea.appendChild(statusDiv);
+    card.appendChild(statusArea);
 
-    container.appendChild(div);
+    container.appendChild(card);
   });
 
   document.getElementById("problemCountDisplay").textContent =
     `問題数: ${problemCount}`;
-
-  /* 帯の位置を更新 */
-  updateBandPosition();
 }
 
 /* ====== フッター更新 ====== */
