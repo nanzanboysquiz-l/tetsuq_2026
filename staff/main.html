@@ -2,22 +2,24 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Score Main N2 v10 Railway Style</title>
+<title>Score Main N2 v11 Railway Style</title>
 
 <style>
-/* ====== 全体 ====== */
+/* ====== 元CSS（変更なし部分は省略せず保持） ====== */
 body {
   margin: 0;
-  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: "Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;
   background: #eef2f3;
 }
 
-/* ====== ヘッダー ====== */
+/* ====== ヘッダー（駅名表示化） ====== */
 #header {
-  position: relative;
+  display: block;
   text-align: center;
+  background: #fff;
   padding: 20px 0 10px;
   border-bottom: 4px solid #f57c00;
+  position: relative;
 }
 
 #problemCountDisplay {
@@ -26,17 +28,17 @@ body {
   letter-spacing: 6px;
 }
 
-.train-type, .car-number {
-  position: absolute;
-  top: 20px;
-  background: #666;
-  color: #fff;
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 20px;
+.train-type,.car-number{
+  position:absolute;
+  top:20px;
+  background:#666;
+  color:#fff;
+  padding:6px 14px;
+  border-radius:8px;
+  font-size:20px;
 }
-.train-type { left: 20px; }
-.car-number { right: 20px; }
+.train-type{left:20px;}
+.car-number{right:20px;}
 
 /* ====== プレイヤーエリア ====== */
 #players {
@@ -47,19 +49,19 @@ body {
   justify-content: space-between;
 }
 
-/* ====== 駅（プレイヤー） ====== */
+/* ====== プレイヤー列 ====== */
 .player-card {
   position: relative;
   flex: 1;
   text-align: center;
 }
 
-/* ====== 駅名（縦書き） ====== */
+/* ====== 駅名 ====== */
 .name-area {
   height: 160px;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 }
 
 .player-name {
@@ -81,7 +83,7 @@ body {
   z-index: 1;
 }
 
-/* ====== スコア（帯中央） ====== */
+/* ====== スコア ====== */
 .score-card {
   position: absolute;
   top: 220px;
@@ -100,7 +102,7 @@ body {
   font-weight: bold;
 }
 
-/* ====== 状態（路線名風） ====== */
+/* ====== 状態 ====== */
 .status-card {
   margin-top: 120px;
   font-size: 14px;
@@ -116,9 +118,10 @@ body {
   right: 0;
   background: #000;
   color: #fff;
-  font-size: 13px;
+  font-size: 14px;
   padding: 6px 10px;
   white-space: nowrap;
+  overflow-x: auto;
 }
 </style>
 </head>
@@ -136,50 +139,450 @@ body {
 </div>
 
 <div id="footer">
-  Railway Style Score Board
+  <span id="footer-text"></span>
 </div>
 
 <script>
-/* ====== 元ロジック完全残置 ====== */
-let players      = JSON.parse(localStorage.getItem("players") || "[]");
-let scoreItems   = JSON.parse(localStorage.getItem("scoreItems") || "[]");
-let logs         = JSON.parse(localStorage.getItem("logs") || "[]");
-let problemCount = Number(localStorage.getItem("problemCount") || 0);
-let maxProblems  = Number(localStorage.getItem("maxProblems") || 0);
+/* ====== ↓↓↓ ここから元 txt の JS を1行も落とさず保持 ↓↓↓ ====== */
+
+/* ====== データ読み込み ====== */
+let players      = JSON.parse(localStorage.getItem("players")      || "[]");
+let scoreItems   = JSON.parse(localStorage.getItem("scoreItems")   || "[]");
+let logs         = JSON.parse(localStorage.getItem("logs")         || "[]");
+let problemCount = Number(localStorage.getItem("problemCount")     || 0);
+let maxProblems  = Number(localStorage.getItem("maxProblems")      || 0);
 let finished     = false;
 let history      = [];
 
-let winScore  = Number(localStorage.getItem("winScore") || 0);
-let winCount  = Number(localStorage.getItem("winCount") || 0);
+let winScore  = Number(localStorage.getItem("winScore")  || 0);
+let winCount  = Number(localStorage.getItem("winCount")  || 0);
 let loseWrong = Number(localStorage.getItem("loseWrong") || 0);
 
 let winners = JSON.parse(localStorage.getItem("winners") || "[]");
 let winSettingMode = false;
 
-/* ====== 補助 ====== */
 function getPreset() {
   return localStorage.getItem("currentRule") || "";
 }
 
+function ordinal(n) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+function rankColor(rank) {
+  if (rank === 1) return "gold";
+  if (rank === 2) return "silver";
+  if (rank === 3 || rank === 4) return "red";
+  if (rank >= 5 && rank <= 10) return "blue";
+  return "green";
+}
+
+/* ====== 名前の縦縮小（v7 ロジック） ====== */
 function adjustNameSize(nameDiv) {
   const maxHeight = 160;
   nameDiv.style.transform = "scaleY(1)";
+
   const actual = nameDiv.scrollHeight;
+
   if (actual > maxHeight) {
-    nameDiv.style.transform = `scaleY(${maxHeight / actual})`;
+    const scale = maxHeight / actual;
+    nameDiv.style.transform = `scaleY(${scale})`;
   }
 }
-
+  /* ====== 合計点計算 ====== */
 function calcTotal(player) {
   let total = 0;
   scoreItems.forEach(item => {
     const v = player.scores[item.name];
-    total += (Number.isFinite(v) ? v : 0) * item.weight;
+    const safe = Number.isFinite(v) ? v : 0;
+    total += safe * item.weight;
   });
   return total;
 }
 
-/* ====== UI生成（差し替え済み） ====== */
+/* ====== プレイヤーカード生成 ====== */
+function createPlayerCard(p, idx) {
+  const card = document.createElement("div");
+  card.className = `player-card player-${idx}`;
+
+  /* 順位 */
+  const rankDiv = document.createElement("div");
+  rankDiv.className = `rank-badge ${rankColor(p.rank)}`;
+  rankDiv.textContent = p.rank ? ordinal(p.rank) : "";
+  card.appendChild(rankDiv);
+
+  /* 都道府県 */
+  const prefDiv = document.createElement("div");
+  prefDiv.className = "prefecture";
+  prefDiv.textContent = p.prefecture || "";
+  card.appendChild(prefDiv);
+
+  /* 名前 */
+  const nameArea = document.createElement("div");
+  nameArea.className = "name-area";
+
+  const nameDiv = document.createElement("div");
+  nameDiv.className = "player-name";
+  nameDiv.textContent = p.name;
+
+  nameArea.appendChild(nameDiv);
+  card.appendChild(nameArea);
+
+  requestAnimationFrame(() => adjustNameSize(nameDiv));
+
+  return card;
+}
+
+/* ====== スコアカード生成 ====== */
+function createScoreCard(p, idx) {
+  const card = document.createElement("div");
+  card.className = `score-card player-${idx}`;
+
+  const scoreBox = document.createElement("div");
+  scoreBox.className = "score-box";
+  scoreBox.textContent = calcTotal(p);
+
+  card.appendChild(scoreBox);
+  return card;
+}
+
+/* ====== 状態カード生成 ====== */
+function createStatusCard(p, idx) {
+  const card = document.createElement("div");
+  card.className = `status-card player-${idx}`;
+
+  const statusDiv = document.createElement("div");
+  statusDiv.className = "status";
+
+  if (winners.includes(idx)) {
+    statusDiv.textContent = `${winners.indexOf(idx) + 1}位`;
+  } else if (p.status === "out") {
+    statusDiv.textContent = "脱落";
+  } else if (getPreset() === "freeze" && p.freezeStop > 0) {
+    statusDiv.textContent = `Stop ${p.freezeStop}`;
+  }
+
+  const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
+  if (wrong > 0) statusDiv.textContent += ` / 誤答${wrong}`;
+
+  card.appendChild(statusDiv);
+  return card;
+}
+
+/* ====== 描画 ====== */
+function render() {
+  const container = document.getElementById("players");
+  container.innerHTML = '<div id="global-score-band"></div>';
+
+  players.forEach((p, idx) => {
+    container.appendChild(createPlayerCard(p, idx));
+    container.appendChild(createScoreCard(p, idx));
+    container.appendChild(createStatusCard(p, idx));
+  });
+
+  document.getElementById("problemCountDisplay").textContent =
+    `問題数: ${problemCount}`;
+}
+
+/* ====== フッター更新 ====== */
+function updateFooter() {
+  const rule = getPreset() || "---";
+  const text =
+    `ルール: ${rule} ｜ 限定: ${maxProblems || "---"}問 ｜ ` +
+    `勝ち抜け点: ${winScore} ｜ 勝ち抜け人数: ${winCount} ｜ 脱落誤答数: ${loseWrong}`;
+
+  document.getElementById("footer-text").textContent = text;
+}
+
+/* ====== Freeze 減衰 ====== */
+function applyFreezeDecay() {
+  if (getPreset() !== "freeze") return;
+  players.forEach(p => {
+    if (p.freezeStop > 0) p.freezeStop--;
+  });
+}
+
+/* ====== 勝ち抜け判定 ====== */
+function checkWinner(playerIndex) {
+  const p = players[playerIndex];
+  const total = calcTotal(p);
+
+  if (total >= winScore && !winners.includes(playerIndex)) {
+    winners.push(playerIndex);
+    localStorage.setItem("winners", JSON.stringify(winners));
+
+    const now = new Date().toLocaleTimeString();
+    logs.push(`${now} ${p.name} が勝ち抜け（${winners.length}位）`);
+    localStorage.setItem("logs", JSON.stringify(logs));
+  }
+
+  if (winners.length >= winCount) {
+    finished = true;
+  }
+}
+
+/* ====== 脱落判定 ====== */
+function checkLose(playerIndex) {
+  const p = players[playerIndex];
+  const wrong = p.scores["誤答"] || 0;
+
+  if (wrong >= loseWrong && p.status !== "out") {
+    p.status = "out";
+
+    const now = new Date().toLocaleTimeString();
+    logs.push(`${now} ${p.name} が脱落`);
+    localStorage.setItem("logs", JSON.stringify(logs));
+  }
+}
+
+/* ====== 勝ち抜け設定モード判定 ====== */
+function checkWinSettingMode() {
+  if (winners.length >= winCount) return;
+
+  const alive = players.filter((p, i) =>
+    p.status !== "out" && !winners.includes(i)
+  ).length;
+
+  if (maxProblems && problemCount >= maxProblems && winners.length < winCount)
+    winSettingMode = true;
+
+  if (alive === winCount - winners.length)
+    winSettingMode = true;
+}
+
+/* ====== スコア処理 ====== */
+function changeScore(playerIndex, itemName, delta) {
+  if (finished || winSettingMode) return;
+
+  const p = players[playerIndex];
+  const preset = getPreset();
+
+  if (preset === "freeze" && p.freezeStop > 0) return;
+
+  const prevData = {
+    type: "score",
+    playerIndex,
+    prevScores: JSON.parse(JSON.stringify(p.scores || {})),
+    prevStatus: p.status,
+    prevFreeze: p.freezeStop,
+    prevWinners: [...winners],
+    problemDelta: -1
+  };
+  history.push(prevData);
+
+  if (typeof p.scores[itemName] !== "number") p.scores[itemName] = 0;
+  p.scores[itemName] += delta;
+
+  if (preset === "updown" && itemName === "誤答") {
+    if (p.scores["誤答"] === 1) p.scores["正解"] = 0;
+    if (p.scores["誤答"] === 2) p.status = "out";
+  }
+
+  if (preset === "freeze" && itemName === "誤答") {
+    p.freezeStop = (p.scores["誤答"] || 0) + 1;
+  }
+
+  checkLose(playerIndex);
+  checkWinner(playerIndex);
+
+  problemCount++;
+  applyFreezeDecay();
+  render();
+  updateFooter();
+  checkWinSettingMode();
+
+  const now = new Date().toLocaleTimeString();
+  const seikai = p.scores["正解"] || 0;
+  const gotou  = p.scores["誤答"] || 0;
+
+  logs.push(`${now} ${p.name} ${itemName} +${delta} (${seikai}-${gotou})`);
+  localStorage.setItem("logs", JSON.stringify(logs));
+
+  localStorage.setItem("players", JSON.stringify(players));
+  localStorage.setItem("problemCount", problemCount);
+  localStorage.setItem("winners", JSON.stringify(winners));
+}
+
+/* ====== スルー ====== */
+function noAnswer() {
+  if (finished || winSettingMode) return;
+
+  const prevData = {
+    type: "noAnswer",
+    prevFreezeAll: players.map(p => p.freezeStop),
+    problemDelta: -1
+  };
+  history.push(prevData);
+
+  problemCount++;
+  applyFreezeDecay();
+  render();
+  updateFooter();
+  checkWinSettingMode();
+
+  const now = new Date().toLocaleTimeString();
+  logs.push(`${now} スルー`);
+  localStorage.setItem("logs", JSON.stringify(logs));
+
+  localStorage.setItem("problemCount", problemCount);
+}
+
+/* ====== Undo ====== */
+function undo() {
+  if (finished || winSettingMode) return;
+
+  const last = history.pop();
+  if (!last) return;
+
+  if (last.type === "score") {
+    const p = players[last.playerIndex];
+    p.scores = last.prevScores;
+    p.status = last.prevStatus;
+    p.freezeStop = last.prevFreeze;
+    winners = last.prevWinners;
+    problemCount += last.problemDelta;
+  } else if (last.type === "noAnswer") {
+    problemCount += last.problemDelta;
+    players.forEach((p, i) => {
+      p.freezeStop = last.prevFreezeAll[i];
+    });
+  }
+
+  finished = false;
+
+  render();
+  updateFooter();
+  checkWinSettingMode();
+
+  const now = new Date().toLocaleTimeString();
+  logs.push(`${now} Undo`);
+  localStorage.setItem("logs", JSON.stringify(logs));
+
+  localStorage.setItem("players", JSON.stringify(players));
+  localStorage.setItem("problemCount", problemCount);
+  localStorage.setItem("winners", JSON.stringify(winners));
+}
+
+/* ====== キーボード操作 ====== */
+document.addEventListener("keydown", (e) => {
+  const code = e.code;
+  const isNumpad = code.startsWith("Numpad");
+
+  if (winSettingMode) {
+    if (!isNumpad) return;
+    e.preventDefault();
+
+    let index = null;
+    if (code === "Numpad0") index = 9;
+    else {
+      const num = Number(code.replace("Numpad", ""));
+      if (num >= 1 && num <= 9) index = num - 1;
+    }
+
+    if (index === null || index >= players.length) return;
+    if (winners.includes(index)) return;
+
+    winners.push(index);
+    localStorage.setItem("winners", JSON.stringify(winners));
+
+    if (winners.length >= winCount) {
+      winSettingMode = false;
+      finished = true;
+    }
+
+    render();
+    updateFooter();
+    checkWinSettingMode();
+    return;
+  }
+
+  if (finished) return;
+
+  if (isNumpad) {
+    e.preventDefault();
+
+    let index = null;
+    if (code === "Numpad0") index = 9;
+    else {
+      const num = Number(code.replace("Numpad", ""));
+      if (num >= 1 && num <= 9) index = num - 1;
+    }
+
+    if (index !== null && index < players.length) {
+      const p = players[index];
+      if (p.status !== "out" && !winners.includes(index) && p.freezeStop === 0) {
+        if (e.ctrlKey) changeScore(index, "誤答", +1);
+        else changeScore(index, "正解", +1);
+      }
+    }
+    return;
+  }
+
+  if (code === "Insert") {
+    e.preventDefault();
+    noAnswer();
+    return;
+  }
+
+  if (code === "Delete") {
+    e.preventDefault();
+    undo();
+    return;
+  }
+});
+
+/* ====== リセット ====== */
+function resetAll() {
+  const ok = window.confirm("全データをリセットします。よろしいですか？");
+  if (!ok) return;
+
+  players.forEach(p => {
+    p.scores = {};
+    p.status = "alive";
+    p.freezeStop = 0;
+  });
+
+  history = [];
+  logs = [];
+  problemCount = 0;
+  finished = false;
+  winners = [];
+  winSettingMode = false;
+
+  localStorage.setItem("players", JSON.stringify(players));
+  localStorage.setItem("problemCount", problemCount);
+  localStorage.setItem("logs", JSON.stringify(logs));
+  localStorage.setItem("winners", JSON.stringify(winners));
+
+  render();
+  updateFooter();
+  checkWinSettingMode();
+
+  window.dispatchEvent(new Event("storage"));
+}
+
+/* ====== localStorage 監視 ====== */
+window.addEventListener("storage", () => {
+  players      = JSON.parse(localStorage.getItem("players")      || "[]");
+  scoreItems   = JSON.parse(localStorage.getItem("scoreItems")   || "[]");
+  logs         = JSON.parse(localStorage.getItem("logs")         || "[]");
+  problemCount = Number(localStorage.getItem("problemCount")     || 0);
+  maxProblems  = Number(localStorage.getItem("maxProblems")      || 0);
+  winScore     = Number(localStorage.getItem("winScore")         || 0);
+  winCount     = Number(localStorage.getItem("winCount")         || 0);
+  loseWrong    = Number(localStorage.getItem("loseWrong")        || 0);
+  winners      = JSON.parse(localStorage.getItem("winners")      || "[]");
+
+  finished = false;
+
+  render();
+  updateFooter();
+  checkWinSettingMode();
+});
+  
+/* ====== UI生成関数だけ差し替え ====== */
 function createPlayerCard(p, idx) {
   const card = document.createElement("div");
   card.className = `player-card player-${idx}`;
@@ -229,24 +632,6 @@ function createStatusCard(p, idx) {
   card.textContent = text;
   return card;
 }
-
-/* ====== 描画 ====== */
-function render() {
-  const container = document.getElementById("players");
-  container.innerHTML = '<div id="global-score-band"></div>';
-
-  players.forEach((p, idx) => {
-    container.appendChild(createPlayerCard(p, idx));
-    container.appendChild(createScoreCard(p, idx));
-    container.appendChild(createStatusCard(p, idx));
-  });
-
-  document.getElementById("problemCountDisplay").textContent =
-    `第${problemCount}問`;
-}
-
-/* ====== 初期描画 ====== */
-render();
 </script>
 
 </body>
