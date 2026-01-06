@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Score Main N2 v9</title>
+  <title>Score Main N2 v10</title>
   <style>
     body {
       margin: 0;
@@ -52,15 +52,14 @@
       flex-wrap: wrap;
     }
 
+    /* ====== 名前カード ====== */
     .player-card {
-      position: relative;
       width: 100px;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
 
-    /* ====== 名前（絶対高さ + 縦縮小） ====== */
     .name-area {
       height: 160px; /* ← 常に 160px を基準に帯を置く */
       display: flex;
@@ -74,9 +73,6 @@
       font-size: 32px;
       font-weight: bold;
       transform-origin: center center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       overflow: visible;
     }
 
@@ -114,7 +110,13 @@
       border-right: 18px solid #f57c00;
     }
 
-    /* ====== 白箱（帯中央） ====== */
+    /* ====== スコアカード（白箱） ====== */
+    .score-card {
+      width: 100px;
+      display: flex;
+      justify-content: center;
+    }
+
     .score-box {
       position: relative;
       z-index: 3;
@@ -128,10 +130,11 @@
       font-weight: bold;
     }
 
-    /* ====== 状態欄（帯の下端に接する） ====== */
-    .status-area {
-      margin-top: calc(160px + 38px + 6px);
+    /* ====== 状態カード ====== */
+    .status-card {
+      width: 100px;
       text-align: center;
+      margin-top: calc(160px + 38px + 6px);
     }
 
     .status {
@@ -159,21 +162,6 @@
       color: #333;
     }
 
-    /* ====== 設定リンク・リセット ====== */
-    #controls {
-      text-align: center;
-      margin: 4px 0;
-      font-size: 12px;
-    }
-    .small-link {
-      margin-right: 10px;
-      font-size: 12px;
-    }
-    .small-btn {
-      font-size: 12px;
-      padding: 2px 6px;
-    }
-
     /* ====== フッター ====== */
     #footer {
       position: fixed;
@@ -186,6 +174,20 @@
       padding: 6px 10px;
       white-space: nowrap;
       overflow-x: auto;
+    }
+
+    /* フッター内に設定リンクを移動 */
+    #footer-controls {
+      display: inline-block;
+      margin-left: 20px;
+    }
+
+    .footer-link {
+      color: #fff;
+      margin-right: 10px;
+      font-size: 12px;
+      text-decoration: underline;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -202,12 +204,13 @@
   <div id="global-score-band"></div>
 </div>
 
-<div id="controls">
-  <a href="settings.html" class="small-link">設定へ</a>
-  <button onclick="resetAll()" class="small-btn">リセット</button>
+<div id="footer">
+  <span id="footer-text"></span>
+  <span id="footer-controls">
+    <a href="settings.html" class="footer-link">設定へ</a>
+    <span class="footer-link" onclick="resetAll()">リセット</span>
+  </span>
 </div>
-
-<div id="footer"></div>
 
 <script>
 /* ====== データ読み込み ====== */
@@ -267,68 +270,84 @@ function calcTotal(player) {
   return total;
 }
 
+/* ====== プレイヤーカード生成 ====== */
+function createPlayerCard(p, idx) {
+  const card = document.createElement("div");
+  card.className = `player-card player-${idx}`;
+
+  /* 順位 */
+  const rankDiv = document.createElement("div");
+  rankDiv.className = `rank-badge ${rankColor(p.rank)}`;
+  rankDiv.textContent = p.rank ? ordinal(p.rank) : "";
+  card.appendChild(rankDiv);
+
+  /* 都道府県 */
+  const prefDiv = document.createElement("div");
+  prefDiv.className = "prefecture";
+  prefDiv.textContent = p.prefecture || "";
+  card.appendChild(prefDiv);
+
+  /* 名前 */
+  const nameArea = document.createElement("div");
+  nameArea.className = "name-area";
+
+  const nameDiv = document.createElement("div");
+  nameDiv.className = "player-name";
+  nameDiv.textContent = p.name;
+
+  nameArea.appendChild(nameDiv);
+  card.appendChild(nameArea);
+
+  requestAnimationFrame(() => adjustNameSize(nameDiv));
+
+  return card;
+}
+
+/* ====== スコアカード生成 ====== */
+function createScoreCard(p, idx) {
+  const card = document.createElement("div");
+  card.className = `score-card player-${idx}`;
+
+  const scoreBox = document.createElement("div");
+  scoreBox.className = "score-box";
+  scoreBox.textContent = calcTotal(p);
+
+  card.appendChild(scoreBox);
+  return card;
+}
+
+/* ====== 状態カード生成 ====== */
+function createStatusCard(p, idx) {
+  const card = document.createElement("div");
+  card.className = `status-card player-${idx}`;
+
+  const statusDiv = document.createElement("div");
+  statusDiv.className = "status";
+
+  if (winners.includes(idx)) {
+    statusDiv.textContent = `${winners.indexOf(idx) + 1}位`;
+  } else if (p.status === "out") {
+    statusDiv.textContent = "脱落";
+  } else if (getPreset() === "freeze" && p.freezeStop > 0) {
+    statusDiv.textContent = `Stop ${p.freezeStop}`;
+  }
+
+  const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
+  if (wrong > 0) statusDiv.textContent += ` / 誤答${wrong}`;
+
+  card.appendChild(statusDiv);
+  return card;
+}
+
 /* ====== 描画 ====== */
 function render() {
   const container = document.getElementById("players");
   container.innerHTML = '<div id="global-score-band"></div>';
 
   players.forEach((p, idx) => {
-    const card = document.createElement("div");
-    card.className = "player-card";
-
-    /* 順位 */
-    const rankDiv = document.createElement("div");
-    rankDiv.className = `rank-badge ${rankColor(p.rank)}`;
-    rankDiv.textContent = p.rank ? ordinal(p.rank) : "";
-    card.appendChild(rankDiv);
-
-    /* 都道府県 */
-    const prefDiv = document.createElement("div");
-    prefDiv.className = "prefecture";
-    prefDiv.textContent = p.prefecture || "";
-    card.appendChild(prefDiv);
-
-    /* 名前（絶対高さ + 縦縮小） */
-    const nameArea = document.createElement("div");
-    nameArea.className = "name-area";
-
-    const nameDiv = document.createElement("div");
-    nameDiv.className = "player-name";
-    nameDiv.textContent = p.name;
-
-    nameArea.appendChild(nameDiv);
-    card.appendChild(nameArea);
-
-    requestAnimationFrame(() => adjustNameSize(nameDiv));
-
-    /* 白箱（帯中央） */
-    const scoreBox = document.createElement("div");
-    scoreBox.className = "score-box";
-    scoreBox.textContent = calcTotal(p);
-    card.appendChild(scoreBox);
-
-    /* 状態欄（帯の下端に接する） */
-    const statusArea = document.createElement("div");
-    statusArea.className = "status-area";
-
-    const statusDiv = document.createElement("div");
-    statusDiv.className = "status";
-
-    if (winners.includes(idx)) {
-      statusDiv.textContent = `${winners.indexOf(idx) + 1}位`;
-    } else if (p.status === "out") {
-      statusDiv.textContent = "脱落";
-    } else if (getPreset() === "freeze" && p.freezeStop > 0) {
-      statusDiv.textContent = `Stop ${p.freezeStop}`;
-    }
-
-    const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
-    if (wrong > 0) statusDiv.textContent += ` / 誤答${wrong}`;
-
-    statusArea.appendChild(statusDiv);
-    card.appendChild(statusArea);
-
-    container.appendChild(card);
+    container.appendChild(createPlayerCard(p, idx));
+    container.appendChild(createScoreCard(p, idx));
+    container.appendChild(createStatusCard(p, idx));
   });
 
   document.getElementById("problemCountDisplay").textContent =
@@ -342,7 +361,7 @@ function updateFooter() {
     `ルール: ${rule} ｜ 限定: ${maxProblems || "---"}問 ｜ ` +
     `勝ち抜け点: ${winScore} ｜ 勝ち抜け人数: ${winCount} ｜ 脱落誤答数: ${loseWrong}`;
 
-  document.getElementById("footer").textContent = text;
+  document.getElementById("footer-text").textContent = text;
 }
 
 /* ====== Freeze 減衰 ====== */
