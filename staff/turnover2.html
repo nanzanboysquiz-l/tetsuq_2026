@@ -64,19 +64,51 @@
 <button onclick="slow()">Slow</button>
 
   <script>
-// 初期表示：TO0iS.png をセット
-window.addEventListener("DOMContentLoaded", () => {
+// -----------------------------
+// 画像プリロード
+// -----------------------------
+function preloadImages(paths) {
+  return Promise.all(
+    paths.map(
+      path =>
+        new Promise(resolve => {
+          const img = new Image();
+          img.onload = resolve;
+          img.onerror = resolve; // エラーでも resolve して止まらないように
+          img.src = path;
+        })
+    )
+  );
+}
+
+// -----------------------------
+// 初期表示（TOOiS.png）
+// -----------------------------
+window.addEventListener("DOMContentLoaded", async () => {
+  const initImg = "assets/images/to/TOOiS.png";
+
   const imgMain = document.querySelector('#flapImg');
   const imgTop  = document.querySelector('#flapImgTop');
   const imgBot  = document.querySelector('#flapImgBottom');
 
-  const initImg = "assets/images/to/TOOiS.png";
-
   imgMain.src = initImg;
   imgTop.src  = initImg;
   imgBot.src  = initImg;
+
+  // 事前ロード：TO1〜TO22
+  const preloadList = [];
+  for (let n = 1; n <= 22; n++) {
+    preloadList.push(`assets/images/to/TO${n}.png`);
+  }
+
+  console.log("画像プリロード開始");
+  await preloadImages(preloadList);
+  console.log("画像プリロード完了");
 });
 
+// -----------------------------
+// ボタン
+// -----------------------------
 function start() {
   turn(60);
 }
@@ -85,8 +117,10 @@ function slow() {
   turn(300);
 }
 
+// -----------------------------
+// flip 本体
+// -----------------------------
 async function turn(duration) {
-  // TO1.png 〜 TO22.png を順番に flip
   for (let n = 1; n <= 22; n++) {
     await turnFlap(n, duration);
   }
