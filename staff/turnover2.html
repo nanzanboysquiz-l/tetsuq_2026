@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ターンオーバー</title>
+  <style>
+    .outer {
+  width: 500px;
+  height: 100px;
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.flap {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  overflow: hidden;
+  background-size: 100% 200%; /* 上下2倍の高さを1枚に収める */
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  border: solid 1px #000;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.26);
+}
+
+.flap.top {
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
+  display: none;
+}
+
+.flap.bottom {
+  clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
+  display: none;
+}
+
+.gap {
+  height: 1px;
+  width: 100%;
+  position: relative;
+  top: 50px;
+  background-color: #000;
+  z-index: 20;
+  opacity: 0.6;
+}
+  </style>
+</head>
+<body>
+<div class="outer">
+  <div class="flap" id="flap"></div>
+  <div class="flap top"></div>
+  <div class="flap bottom"></div>
+  <div class="gap"></div>
+</div>
+
+<button onclick="start()">Start</button>
+<button onclick="slow()">Slow</button>
+
+  <script>
+function start() {
+  turn(60);
+}
+
+function slow() {
+  turn(300);
+}
+
+async function turn(duration) {
+  for (let n = 1; n <= 10; n++) {
+    await turnFlap(n, duration);
+  }
+}
+
+async function turnFlap(n, duration) {
+
+  const flap  = document.querySelector('#flap');
+  const flapT = document.querySelector('.flap.top');
+  const flapB = document.querySelector('.flap.bottom');
+
+  const imgPath = `assets/images/to/TO${n}.png`;
+
+  // 上半分・下半分の背景画像設定
+  flapT.style.backgroundImage = `url(${imgPath})`;
+  flapB.style.backgroundImage = `url(${imgPath})`;
+
+  // メインフラップの前半設定
+  flap.style.backgroundImage = `url(${imgPath})`;
+  flap.style.backgroundPosition = "0 0"; // 上半分
+  flap.style.zIndex = 11;
+  flapB.style.zIndex = 12;
+  flapT.style.zIndex = 10;
+
+  flapT.style.display = 'block';
+  flapB.style.display = 'block';
+
+  // 前半90度回転
+  let animation = flap.animate(
+    [{ transform: 'rotateX(-90deg)' }],
+    { duration: duration }
+  );
+  await animation.finished;
+
+  // 後半設定
+  flap.style.transform = 'rotateX(90deg)';
+  flap.style.backgroundPosition = "0 -100%"; // 下半分
+  flap.style.zIndex = 11;
+  flapB.style.zIndex = 10;
+  flapT.style.zIndex = 12;
+
+  // 後半90度回転
+  animation = flap.animate(
+    [{ transform: 'rotateX(0deg)' }],
+    { duration: duration, fill: 'forwards' }
+  );
+  await animation.finished;
+  animation.commitStyles();
+  animation.cancel();
+
+  // 次の回転のために下半分を更新
+  flapB.style.backgroundPosition = "0 -100%";
+
+  // 上半分・下半分を非表示
+  flapB.style.display = 'none';
+  flapT.style.display = 'none';
+}
+  </script>
+</body>
+</html>
