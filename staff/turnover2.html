@@ -4,25 +4,28 @@
   <meta charset="UTF-8">
   <title>ターンオーバー</title>
   <style>
-    .outer {
-  width: 500px;
-  height: calc(500px * 529 / 1134);
+  .outer {
+  width: 500px; 
+  height: calc(500px * 529 / 1134); /* 画像比率に合わせる */
   position: relative;
   margin-bottom: 10px;
 }
 
 .flap {
-  height: 100%;
   width: 100%;
+  height: 100%;
   position: absolute;
   overflow: hidden;
-  background-size: 100% 200%; /* 上下2倍の高さを1枚に収める */
-  background-repeat: no-repeat;
-  background-position: 0 0;
-  border: solid 1px #000;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.26);
 }
 
+.flap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;  /* ← 比率維持で縮小して収める */
+  display: block;
+}
+
+/* 上半分・下半分の切り取り */
 .flap.top {
   clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
   display: none;
@@ -39,16 +42,21 @@
   position: relative;
   top: 50%;
   background-color: #000;
-  z-index: 20;
   opacity: 0.6;
 }
   </style>
 </head>
 <body>
 <div class="outer">
-  <div class="flap" id="flap"></div>
-  <div class="flap top"></div>
-  <div class="flap bottom"></div>
+  <div class="flap" id="flap">
+    <img id="flapImg" />
+  </div>
+  <div class="flap top">
+    <img id="flapImgTop" />
+  </div>
+  <div class="flap bottom">
+    <img id="flapImgBottom" />
+  </div>
   <div class="gap"></div>
 </div>
 
@@ -76,15 +84,17 @@ async function turnFlap(n, duration) {
   const flapT = document.querySelector('.flap.top');
   const flapB = document.querySelector('.flap.bottom');
 
+  const imgMain = document.querySelector('#flapImg');
+  const imgTop  = document.querySelector('#flapImgTop');
+  const imgBot  = document.querySelector('#flapImgBottom');
+
   const imgPath = `assets/images/to/TO${n}.png`;
 
-  // 上半分・下半分の背景画像設定
-  flapT.style.backgroundImage = `url(${imgPath})`;
-  flapB.style.backgroundImage = `url(${imgPath})`;
+  // 画像セット
+  imgMain.src = imgPath;
+  imgTop.src  = imgPath;
+  imgBot.src  = imgPath;
 
-  // メインフラップの前半設定
-  flap.style.backgroundImage = `url(${imgPath})`;
-  flap.style.backgroundPosition = "0 0"; // 上半分
   flap.style.zIndex = 11;
   flapB.style.zIndex = 12;
   flapT.style.zIndex = 10;
@@ -101,7 +111,6 @@ async function turnFlap(n, duration) {
 
   // 後半設定
   flap.style.transform = 'rotateX(90deg)';
-  flap.style.backgroundPosition = "0 -100%"; // 下半分
   flap.style.zIndex = 11;
   flapB.style.zIndex = 10;
   flapT.style.zIndex = 12;
@@ -115,10 +124,6 @@ async function turnFlap(n, duration) {
   animation.commitStyles();
   animation.cancel();
 
-  // 次の回転のために下半分を更新
-  flapB.style.backgroundPosition = "0 -100%";
-
-  // 上半分・下半分を非表示
   flapB.style.display = 'none';
   flapT.style.display = 'none';
 }
