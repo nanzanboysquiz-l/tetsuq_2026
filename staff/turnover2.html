@@ -64,6 +64,19 @@
 <button onclick="slow()">Slow</button>
 
   <script>
+// 初期表示：TO0iS.png をセット
+window.addEventListener("DOMContentLoaded", () => {
+  const imgMain = document.querySelector('#flapImg');
+  const imgTop  = document.querySelector('#flapImgTop');
+  const imgBot  = document.querySelector('#flapImgBottom');
+
+  const initImg = "assets/images/to/TOOiS.png";
+
+  imgMain.src = initImg;
+  imgTop.src  = initImg;
+  imgBot.src  = initImg;
+});
+
 function start() {
   turn(60);
 }
@@ -73,7 +86,8 @@ function slow() {
 }
 
 async function turn(duration) {
-  for (let n = 1; n <= 10; n++) {
+  // TO1.png 〜 TO22.png を順番に flip
+  for (let n = 1; n <= 22; n++) {
     await turnFlap(n, duration);
   }
 }
