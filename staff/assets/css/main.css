@@ -138,4 +138,28 @@ body {
   padding: 6px 10px;
   white-space: nowrap;
   overflow-x: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#reset-button {
+  background: #f57c00;
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+#reset-button:hover {
+  background: #d56600;
+}
+
+#reset-button:active {
+  background: #c45f00;
 }

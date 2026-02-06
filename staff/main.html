@@ -20,6 +20,7 @@
 
 <div id="footer">
   <span id="footer-text"></span>
+  <button id="reset-button">リセット</button>
 </div>
 
 <script>
@@ -464,6 +465,11 @@ window.addEventListener("storage", () => {
 render();
 updateFooter();
 checkWinSettingMode();
+
+/* ====== リセットボタン ====== */
+document.getElementById("reset-button").addEventListener("click", () => {
+  resetAll();
+});
 
 
 /* プレイヤーカード（名前のみ） */
