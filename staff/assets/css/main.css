@@ -49,6 +49,9 @@ body {
   position: relative;
   flex: 1;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* ====== 名前（縦書き） ====== */
@@ -67,45 +70,10 @@ body {
   transform-origin: center center;
 }
 
-/* ====== オレンジ帯（左三角あり） ====== */
-#global-score-band {
-  position: absolute;
-  top: 220px;
-  left: 0;
-  width: 100%;
-  height: 38px;
-  z-index: 1;
-}
-
-#global-score-band::after {
-  content: "";
-  position: absolute;
-  left: 36px;
-  top: 0;
-  width: calc(100% - 36px);
-  height: 100%;
-  background: #f57c00;
-}
-
-#global-score-band::before {
-  content: "";
-  position: absolute;
-  left: 18px;
-  top: 0;
-  width: 0;
-  height: 0;
-  border-top: 19px solid transparent;
-  border-bottom: 19px solid transparent;
-  border-right: 18px solid #f57c00;
-}
-
-/* ====== スコア（帯中央） ====== */
+/* ====== スコア ====== */
 .score-card {
-  position: absolute;
-  top: 224px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2;
+  margin-top: 20px;
+  margin-bottom: 10px;
 }
 
 .score-box {
@@ -118,9 +86,9 @@ body {
   font-weight: bold;
 }
 
-/* ====== 状態（帯の下） ====== */
+/* ====== 状態 ====== */
 .status-card {
-  margin-top: 120px;
+  margin-top: 10px;
   font-size: 14px;
   font-weight: 700;
   color: #222;

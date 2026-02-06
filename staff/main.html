@@ -153,12 +153,13 @@ function createStatusCard(p, idx) {
 /* ====== 描画 ====== */
 function render() {
   const container = document.getElementById("players");
-  container.innerHTML = '<div id="global-score-band"></div>';
+  container.innerHTML = '';
 
   players.forEach((p, idx) => {
-    container.appendChild(createPlayerCard(p, idx));
-    container.appendChild(createScoreCard(p, idx));
-    container.appendChild(createStatusCard(p, idx));
+    const playerDiv = createPlayerCard(p, idx);
+    playerDiv.appendChild(createScoreCard(p, idx));
+    playerDiv.appendChild(createStatusCard(p, idx));
+    container.appendChild(playerDiv);
   });
 
   document.getElementById("problemCountDisplay").textContent =
