@@ -1,0 +1,141 @@
+@charset "utf-8";
+
+/* ====== 全体 ====== */
+body {
+  margin: 0;
+  font-family: "Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;
+  background: #eef2f3;
+}
+
+/* ====== ヘッダー ====== */
+#header {
+  display: block;
+  text-align: center;
+  background: #fff;
+  padding: 20px 0 10px;
+  border-bottom: 4px solid #f57c00;
+  position: relative;
+}
+
+#problemCountDisplay {
+  font-size: 64px;
+  font-weight: 900;
+  letter-spacing: 6px;
+}
+
+.train-type,.car-number{
+  position:absolute;
+  top:20px;
+  background:#666;
+  color:#fff;
+  padding:6px 14px;
+  border-radius:8px;
+  font-size:20px;
+}
+.train-type{left:20px;}
+.car-number{right:20px;}
+
+/* ====== プレイヤーエリア ====== */
+#players {
+  position: relative;
+  background: #fff;
+  padding: 40px 20px 160px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ====== プレイヤー列 ====== */
+.player-card {
+  position: relative;
+  flex: 1;
+  text-align: center;
+}
+
+/* ====== 名前（縦書き） ====== */
+.name-area {
+  height: 160px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.player-name {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-size: 32px;
+  font-weight: 800;
+  transform-origin: center center;
+}
+
+/* ====== オレンジ帯（左三角あり） ====== */
+#global-score-band {
+  position: absolute;
+  top: 220px;
+  left: 0;
+  width: 100%;
+  height: 38px;
+  z-index: 1;
+}
+
+#global-score-band::after {
+  content: "";
+  position: absolute;
+  left: 36px;
+  top: 0;
+  width: calc(100% - 36px);
+  height: 100%;
+  background: #f57c00;
+}
+
+#global-score-band::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-top: 19px solid transparent;
+  border-bottom: 19px solid transparent;
+  border-right: 18px solid #f57c00;
+}
+
+/* ====== スコア（帯中央） ====== */
+.score-card {
+  position: absolute;
+  top: 224px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.score-box {
+  width: 48px;
+  height: 30px;
+  line-height: 30px;
+  background: #fff;
+  border: 2px solid #ccc;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* ====== 状態（帯の下） ====== */
+.status-card {
+  margin-top: 120px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #222;
+}
+
+/* ====== フッター ====== */
+#footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #000;
+  color: #fff;
+  font-size: 14px;
+  padding: 6px 10px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
