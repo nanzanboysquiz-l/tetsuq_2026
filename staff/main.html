@@ -58,18 +58,21 @@ function rankColor(rank) {
   return "green";
 }
 
-/* ====== 名前の縦縮小（v7 ロジック） ====== */
+/* ====== 名前の縦縮小====== */
 function adjustNameSize(nameDiv) {
   const maxHeight = 160;
   nameDiv.style.transform = "scaleY(1)";
 
-  const actual = nameDiv.scrollHeight;
-
-  if (actual > maxHeight) {
-    const scale = maxHeight / actual;
-    nameDiv.style.transform = `scaleY(${scale})`;
-  }
+  // フォント読み込み完了を想定するため、少し遅延させる
+  setTimeout(() => {
+    const actual = nameDiv.scrollHeight;
+    if (actual > maxHeight) {
+      const scale = maxHeight / actual;
+      nameDiv.style.transform = `scaleY(${scale})`;
+    }
+  }, 100);
 }
+
   /* ====== 合計点計算 ====== */
 function calcTotal(player) {
   let total = 0;
