@@ -109,7 +109,7 @@ function createPlayerCard(p, idx) {
   nameArea.appendChild(nameDiv);
   card.appendChild(nameArea);
 
-  requestAnimationFrame(() => adjustNameSize(nameDiv));
+  adjustNameSize(nameDiv);
 
   return card;
 }
