@@ -476,62 +476,7 @@ document.getElementById("reset-button").addEventListener("click", () => {
 });
 
 
-/* プレイヤーカード（名前のみ） */
-function createPlayerCard(p, idx) {
-  const card = document.createElement("div");
-  card.className = `player-card player-${idx}`;
 
-  const nameArea = document.createElement("div");
-  nameArea.className = "name-area";
-
-  const nameDiv = document.createElement("div");
-  nameDiv.className = "player-name";
-  nameDiv.textContent = p.name;
-
-  nameArea.appendChild(nameDiv);
-  card.appendChild(nameArea);
-
-  requestAnimationFrame(() => adjustNameSize(nameDiv));
-  return card;
-}
-
-/* スコアカード（帯中央） */
-function createScoreCard(p, idx) {
-  const card = document.createElement("div");
-  card.className = `score-card player-${idx}`;
-
-  const box = document.createElement("div");
-  box.className = "score-box";
-  box.textContent = calcTotal(p);
-
-  card.appendChild(box);
-  return card;
-}
-
-/* 状態カード（帯下・statusのみ） */
-function createStatusCard(p, idx) {
-  const card = document.createElement("div");
-  card.className = `status-card player-${idx}`;
-
-  let text = "";
-
-  if (winners.includes(idx)) {
-    text = `${winners.indexOf(idx) + 1}位`;
-  } else if (p.status === "out") {
-    text = "脱落";
-  } else if (getPreset() === "freeze" && p.freezeStop > 0) {
-    text = `Stop ${p.freezeStop}`;
-  }
-
-  const wrong = Number.isFinite(p.scores["誤答"]) ? p.scores["誤答"] : 0;
-  if (wrong > 0) {
-    if (text) text += " / ";
-    text += `誤答${wrong}`;
-  }
-
-  card.textContent = text;
-  return card;
-}
 </script>
 
 </body>
