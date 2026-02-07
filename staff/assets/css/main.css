@@ -57,6 +57,7 @@ body {
 /* ====== 名前（縦書き） ====== */
 .name-area {
   height: 160px;
+  width: 55px;
   display: flex;
   justify-content: center;
   align-items: center;
