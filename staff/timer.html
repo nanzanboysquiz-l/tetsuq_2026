@@ -43,17 +43,23 @@
 
     <div class="row">
       <label for="minutes"><b>分数 n:</b></label>
-      <input id="minutes" type="number" min="1" step="1" placeholder="例: 5" />
+      <input id="minutes" type="number" min="1" step="1" />
       <button id="setBtn">設定</button>
     </div>
 
     <div class="time" id="display">00:00</div>
     <div class="row" style="justify-content:center;">
+      <div class="row" style="justify-content:center; margin-bottom:20px;">
+        <button id="btnA">Part A</button>
+        <button id="btnB">Part B</button>
+      </div>
+      <audio id="mpA" src="assets/audio/T_U_Koto no Asamoya.mp3"></audio>
+      <audio id="mpB" src="assets/audio/Keihan_U_LtdExp.mp3"></audio>
+
       <button id="startBtn">開始</button>
       <button id="pauseBtn" disabled>一時停止</button>
       <button id="resetBtn" disabled>リセット</button>
     </div>
-    <audio id="mp" src="assets/audio/T_U_Koto no Asamoya.mp3"></audio>
     <div class="status" id="status"></div>
   </div>
 
@@ -70,6 +76,31 @@
     let remaining    = 0;
     let timerId      = null;
     let running      = false;
+    let currentMode = null;
+
+    document.getElementById("btnA").addEventListener("click", () => {
+      const a = 15;
+      totalSeconds = a * 60;
+      remaining = totalSeconds;
+      currentMode = "A";
+      updateDisplay();
+      setStatus(`Part A: ${a} 分で設定しました。`, 'ok');
+      startBtn.disabled = false;
+      resetBtn.disabled = false;
+      pauseBtn.disabled = true;
+    }); 
+
+    document.getElementById("btnB").addEventListener("click", () => {
+      const b = 20;
+      totalSeconds = b * 60;
+      remaining = totalSeconds;
+      currentMode = "B";
+      updateDisplay();
+      setStatus(`Part B: ${b} 分で設定しました。`, 'ok');
+      startBtn.disabled = false;
+      resetBtn.disabled = false;
+      pauseBtn.disabled = true;
+    });
 
     function format(sec) {
       const m = Math.floor(sec / 60);
@@ -117,14 +148,17 @@
           clearInterval(timerId);
           timerId = null;
           running = false;
+          if (currentMode === "A") {
+            const audioA = document.getElementById("mpA");
+            audioA.currentTime = 0;
+            audioA.play();
+          } else if (currentMode === "B") {
+            const audioB = document.getElementById("mpB");
+            audioB.currentTime = 0;
+            audioB.play();
+          }
 
-          const audio = document.getElementById("mp");
-          audio.currentTime = 0;
-          audio.play().catch(err => {
-            console.log("AutoPlay has been blocked.", err);
-          });
-          
-          setStatus('タイマー終了！','end'); // 赤文字表示
+          setStatus('タイマー終了！','end');
           startBtn.disabled = false;
           pauseBtn.disabled = true;
         }
