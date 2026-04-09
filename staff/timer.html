@@ -42,10 +42,10 @@
     <h2>1st Round Paper Quiz</h2>
 
     <div class="row">
-      <label for="minutes"><b>分数 n:</b></label>
-      <input id="minutes" type="number" min="1" step="1" />
-      <button id="setBtn">設定</button>
+      <label><b>現在のパート:</b></label>
+      <div id="currentPart" style="font-size:20px; font-weight:bold;">未設定</div>
     </div>
+
 
     <div class="time" id="display">00:00</div>
     <div class="row" style="justify-content:center;">
@@ -71,6 +71,7 @@
     const resetBtn     = document.getElementById('resetBtn');
     const display      = document.getElementById('display');
     const status       = document.getElementById('status');
+    const currentPartLabel = document.getElementById('currentPart');
     
     let totalSeconds = 0;
     let remaining    = 0;
@@ -79,28 +80,35 @@
     let currentMode = null;
 
     document.getElementById("btnA").addEventListener("click", () => {
-      const a = 15;
+      const a = 15; // A の分数
       totalSeconds = a * 60;
       remaining = totalSeconds;
       currentMode = "A";
-      updateDisplay();
-      setStatus(`Part A: ${a} 分で設定しました。`, 'ok');
-      startBtn.disabled = false;
-      resetBtn.disabled = false;
-      pauseBtn.disabled = true;
-    }); 
 
-    document.getElementById("btnB").addEventListener("click", () => {
-      const b = 20;
-      totalSeconds = b * 60;
-      remaining = totalSeconds;
-      currentMode = "B";
       updateDisplay();
-      setStatus(`Part B: ${b} 分で設定しました。`, 'ok');
+      currentPartLabel.textContent = `Part A（${a}分）`;
+      setStatus(`Part A: ${a} 分で設定しました。`, 'ok');
+
       startBtn.disabled = false;
       resetBtn.disabled = false;
       pauseBtn.disabled = true;
     });
+
+    document.getElementById("btnB").addEventListener("click", () => {
+      const b = 20; // B の分数
+      totalSeconds = b * 60;
+      remaining = totalSeconds;
+      currentMode = "B";
+
+      updateDisplay();
+      currentPartLabel.textContent = `Part B（${b}分）`;
+      setStatus(`Part B: ${b} 分で設定しました。`, 'ok');
+
+      startBtn.disabled = false;
+      resetBtn.disabled = false;
+      pauseBtn.disabled = true;
+    });
+
 
     function format(sec) {
       const m = Math.floor(sec / 60);
