@@ -80,36 +80,35 @@
     let currentMode = null;
 
     document.getElementById("btnA").addEventListener("click", () => {
-      const a = 15; // A の分数
+      currentMode = "A";
       totalSeconds = a * 60;
       remaining = totalSeconds;
-      currentMode = "A";
-
       updateDisplay();
       currentPartLabel.textContent = `Part A（${a}分）`;
       setStatus(`Part A: ${a} 分で設定しました。`, 'ok');
-
       startBtn.disabled = false;
       resetBtn.disabled = false;
       pauseBtn.disabled = true;
     });
 
     document.getElementById("btnB").addEventListener("click", () => {
-      const b = 20; // B の分数
+      currentMode = "B";
       totalSeconds = b * 60;
       remaining = totalSeconds;
-      currentMode = "B";
-
       updateDisplay();
       currentPartLabel.textContent = `Part B（${b}分）`;
       setStatus(`Part B: ${b} 分で設定しました。`, 'ok');
-
       startBtn.disabled = false;
       resetBtn.disabled = false;
       pauseBtn.disabled = true;
     });
 
-
+    function getCurrentMinutes() {
+      if (currentMode === "A") return a;
+      if (currentMode === "B") return b;
+      return null;
+    }
+    
     function format(sec) {
       const m = Math.floor(sec / 60);
       const s = sec % 60;
@@ -127,26 +126,7 @@
       display.textContent = format(remaining);
     }
 
-    function validateN(value) {
-      const n = Number(value);
-      if (!Number.isInteger(n) || n < 1) return null;
-      return n;
-    }
-
-    function setMinutes() {
-      const n = validateN(minutesInput.value);
-      if (n === null) {
-        setStatus('n は 1 以上の自然数を入力してください。','warn');
-        return;
-      }
-      totalSeconds = n * 60;
-      remaining = totalSeconds;
-      updateDisplay();
-      setStatus(`n=${n} 分で設定しました。`,'ok');
-      startBtn.disabled = false;
-      resetBtn.disabled = false;
-      pauseBtn.disabled = true;
-   }
+    const n = getCurrentMinutes();
     
     function tick() {
       if (remaining > 0) {
@@ -157,16 +137,12 @@
           timerId = null;
           running = false;
           if (currentMode === "A") {
-            const audioA = document.getElementById("mpA");
-            audioA.currentTime = 0;
-            audioA.play();
+            document.getElementById("mpA").play();
           } else if (currentMode === "B") {
-            const audioB = document.getElementById("mpB");
-            audioB.currentTime = 0;
-            audioB.play();
+            document.getElementById("mpB").play();
           }
 
-          setStatus('タイマー終了！','end');
+          setStatus('Time Up!!','end');
           startBtn.disabled = false;
           pauseBtn.disabled = true;
         }
