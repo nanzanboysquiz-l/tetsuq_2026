@@ -79,7 +79,8 @@
     let running      = false;
     let currentMode = null;
 
-    document.getElementById("btnA").addEventListener("click", () => {
+    document.getElementById("btnA").addEventListener("click", () => {]
+      const a = 15;
       currentMode = "A";
       totalSeconds = a * 60;
       remaining = totalSeconds;
@@ -92,6 +93,7 @@
     });
 
     document.getElementById("btnB").addEventListener("click", () => {
+      const b = 20;
       currentMode = "B";
       totalSeconds = b * 60;
       remaining = totalSeconds;
