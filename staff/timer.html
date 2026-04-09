@@ -53,7 +53,7 @@
       <button id="pauseBtn" disabled>一時停止</button>
       <button id="resetBtn" disabled>リセット</button>
     </div>
-
+    <audio id="Alarm" src="assets/audio/T_U_Koto no Asamoya.mp3"></audio>
     <div class="status" id="status"></div>
   </div>
 
@@ -65,7 +65,7 @@
     const resetBtn     = document.getElementById('resetBtn');
     const display      = document.getElementById('display');
     const status       = document.getElementById('status');
-
+    
     let totalSeconds = 0;
     let remaining    = 0;
     let timerId      = null;
@@ -107,8 +107,13 @@
       startBtn.disabled = false;
       resetBtn.disabled = false;
       pauseBtn.disabled = true;
-    }
+   }
 
+    function Alarm() {
+      const audio = document.geElementById("Alarm");
+      audio.play();
+    }
+    
     function tick() {
       if (remaining > 0) {
         remaining -= 1;
@@ -117,6 +122,7 @@
           clearInterval(timerId);
           timerId = null;
           running = false;
+          Alarm();
           setStatus('タイマー終了！','end'); // 赤文字表示
           startBtn.disabled = false;
           pauseBtn.disabled = true;
