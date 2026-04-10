@@ -49,10 +49,8 @@
 
     <div class="time" id="display">00:00</div>
     <div class="row" style="justify-content:center;">
-      <div class="row" style="justify-content:center; margin-bottom:20px;">
-        <button id="btnA">Part A</button>
-        <button id="btnB">Part B</button>
-      </div>
+      <button id="btnA">Part A</button>
+      <button id="btnB">Part B</button>
       <audio id="mpA" src="assets/audio/T_U_Koto no Asamoya.mp3"></audio>
       <audio id="mpB" src="assets/audio/Keihan_U_LtdExp.mp3"></audio>
 
@@ -152,13 +150,6 @@
     function startTimer() {
       if (running) return;
       if (remaining <= 0) {
-        if (totalSeconds > 0) {
-          remaining = totalSeconds;
-        } else {
-          setStatus('まず n を設定してください。','warn');
-          return;
-        }
-      }
       timerId = setInterval(tick, 1000);
       running = true;
       startBtn.disabled = true;
