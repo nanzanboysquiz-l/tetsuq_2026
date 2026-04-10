@@ -144,15 +144,22 @@
       }
     }
 
-    function startTimer() {
+   function startTimer() {
       if (running) return;
       if (remaining <= 0) {
+        if (totalSeconds > 0) {
+          remaining = totalSeconds;
+        } else {
+          setStatus('まずパートを選択してください。','warn');
+          return;
+        }
+    }
+
       timerId = setInterval(tick, 1000);
       running = true;
       startBtn.disabled = true;
       pauseBtn.disabled = false;
       setStatus('カウント中…','ok');
-      }
     }
 
     function pauseTimer() {
