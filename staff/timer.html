@@ -49,11 +49,10 @@
 
     <div class="time" id="display">00:00</div>
     <div class="row" style="justify-content:center;">
-      <button id="btnA">Part A</button>
-      <button id="btnB">Part B</button>
       <audio id="mpA" src="assets/audio/T_U_Koto no Asamoya.mp3"></audio>
       <audio id="mpB" src="assets/audio/Keihan_U_LtdExp.mp3"></audio>
-
+      <button id="btnA">Part A</button>
+      <button id="btnB">Part B</button>
       <button id="startBtn">開始</button>
       <button id="pauseBtn" disabled>一時停止</button>
       <button id="resetBtn" disabled>リセット</button>
@@ -153,6 +152,7 @@
       startBtn.disabled = true;
       pauseBtn.disabled = false;
       setStatus('カウント中…','ok');
+      }
     }
 
     function pauseTimer() {
@@ -182,7 +182,6 @@
     startBtn.addEventListener('click', startTimer);
     pauseBtn.addEventListener('click', pauseTimer);
     resetBtn.addEventListener('click', resetTimer);
-    });
 
     updateDisplay();
   </script>
