@@ -123,8 +123,6 @@
     function updateDisplay() {
       display.textContent = format(remaining);
     }
-
-    const n = getCurrentMinutes();
     
     function tick() {
       if (remaining > 0) {
@@ -181,13 +179,9 @@
       setStatus(totalSeconds ? 'リセットしました。' : 'まず n を設定してください。', totalSeconds ? 'ok' : 'warn');
     }
 
-    setBtn.addEventListener('click', setMinutes);
     startBtn.addEventListener('click', startTimer);
     pauseBtn.addEventListener('click', pauseTimer);
     resetBtn.addEventListener('click', resetTimer);
-
-    minutesInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') setMinutes();
     });
 
     updateDisplay();
