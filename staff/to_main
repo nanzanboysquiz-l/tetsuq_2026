@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ターンオーバー（表示）</title>
+  <style>
+    @font-face {
+      font-family: 'JF Dot Ayu Gothic 20';
+      src: url('assets/fonts/JF-Dot-Ayu20.ttf') format('truetype');
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: url("assets/images/to/TO背景.png") no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 20px;
+    }
+
+    .main-wrapper {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1134px;
+      aspect-ratio: 1134 / 529;
+      overflow: hidden;
+      border: 2px solid #333;
+      background: rgba(255,255,255,0.85);
+      position: relative;
+    }
+
+    .track {
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap, 0px);
+      transform: translateY(0);
+      will-change: transform;
+    }
+    .track img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .number-display {
+      width: 250px;
+      height: 250px;
+      background: #333333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .number-display span {
+      font-family: 'JF Dot Ayu Gothic 20', monospace;
+      font-size: 200px;
+      color: orange;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="main-wrapper">
+    <div class="container">
+      <div class="track" id="track"></div>
+    </div>
+
+    <div class="number-display">
+      <span id="numberValue">0</span>
+    </div>
+  </div>
+
+  <script>
+    const track = document.getElementById("track");
+    const MARGIN_RATIO = 10 / 529;
+    let scrollTimer = null;
+    let currentIndex = 1;
+    let offsetY = 0;
+
+    function buildImages() {
+      const specials = ["TOOiS.png", "TOOiS.png", "TOWhite.png"];
+      specials.forEach(n => appendImg(`assets/images/to/${n}`));
+      for (let i = 1; i <= 22; i++) appendImg(`assets/images/to/TO${i}.png`);
+      appendImg("assets/images/to/TOWhite.png");
+    }
+    function appendImg(src) {
+      const img = document.createElement("img");
+      img.src = src;
+      track.appendChild(img);
+    }
+
+    function updateGap() {
+      const firstImg = track.querySelector("img");
+      if (!firstImg) return;
+      const h = firstImg.clientHeight;
+      const gapPx = h * MARGIN_RATIO;
+      track.style.setProperty("--gap", `${gapPx}px`);
+    }
+
+    function getStepHeight() {
+      const imgs = track.querySelectorAll("img");
+      if (imgs.length < 2) return 539;
+      const r0 = imgs[0].getBoundingClientRect();
+      const r1 = imgs[1].getBoundingClientRect();
+      return Math.abs(r1.top - r0.top);
+    }
+
+    function scrollTo(m) {
+      if (scrollTimer) clearInterval(scrollTimer);
+      updateGap();
+      const step = getStepHeight();
+      const targetIndex = m + 3;
+
+      if (targetIndex > currentIndex) {
+        const distance = targetIndex - currentIndex;
+        runScroll(distance, -1, targetIndex, step);
+      } else if (targetIndex < currentIndex) {
+        runScroll(1, -1, currentIndex + 1, step, () => {
+          const backDistance = currentIndex - targetIndex;
+          runScroll(backDistance, +1, targetIndex, step);
+        });
+      }
+    }
+
+    function runScroll(distance, direction, newIndex, stepHeight, callback) {
+      let targetPixels = distance * stepHeight;
+      let moved = 0;
+      scrollTimer = setInterval(() => {
+        const delta = direction * 10;
+        moved += Math.abs(delta);
+        offsetY += delta;
+        track.style.transform = `translateY(${offsetY}px)`;
+        if (moved >= targetPixels) {
+          clearInterval(scrollTimer);
+          scrollTimer = null;
+          currentIndex = newIndex;
+
+          offsetY = -stepHeight * (newIndex - 1);
+          track.style.transform = `translateY(${offsetY}px)`;
+
+          if (callback) callback();
+        }
+      }, 16);
+    }
+
+    let numberValue = 0;
+    const numberSpan = document.getElementById("numberValue");
+    function drawNumber() { numberSpan.textContent = numberValue; }
+
+    // ★ controller.html からのメッセージ受信
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+
+      if (data.type === "scrollTo") {
+        scrollTo(data.value);
+      }
+
+      if (data.type === "setNumber") {
+        numberValue = data.value;
+        drawNumber();
+      }
+    });
+
+    function init() {
+      buildImages();
+      drawNumber();
+      requestAnimationFrame(updateGap);
+    }
+    window.addEventListener("load", init);
+    window.addEventListener("resize", updateGap);
+  </script>
+</body>
+</html>
