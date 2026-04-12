@@ -20,11 +20,7 @@
       align-items: flex-start;
       padding-top: 20px;
     }
-
-    #scale-wrapper {
-      transform-origin: top center;
-    }
-    
+  
     .main-wrapper {
       display: flex;
       gap: 20px;
@@ -250,13 +246,6 @@
     window.addEventListener("load", init);
     window.addEventListener("resize", updateGap);
 
-    function autoScale() {
-      const baseWidth = 1400; // 元デザインの想定幅
-      const scale = Math.min(window.innerWidth / baseWidth, 1);
-      document.getElementById("scale-wrapper").style.transform = `scale(${scale})`;
-    }
-    window.addEventListener("load", autoScale);
-    window.addEventListener("resize", autoScale);
   </script>
 </body>
 </html>
