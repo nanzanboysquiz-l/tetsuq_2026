@@ -59,6 +59,9 @@
             <p><strong>定員:</strong> 未定</p>
             <p><strong>エントリー開始:</strong> 2026/7/4 20:00 JST</p>
             <p><strong>備考:</strong> 事前申込制／企画書は当日配布します</p>
+            <div class="timerHidden" data-appear_time="2026/07/04 20:00:00" data-disappear_time="2026/08/23 00:00:00">
+            　<p>エントリーは<strong><a href="https://forms.gle/icxPfKdC8mdmuX5c8" target="_blank" rel="noopener">こちらから</a></strong></p>
+            </div>
           </div>
         </div>
       </details>
@@ -102,6 +105,21 @@
  document.getElementById("toTopBtn").onclick = function() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
+  var myClass = document.getElementsByClassName("timerHidden");
+  for (var i = 0; i < myClass.length; i++){
+    var appearTime = myClass[i].getAttribute("data-appear_time");
+    var disappearTime = myClass[i].getAttribute("data-disappear_time");
+    var threshould_start = Date.parse(appearTime);
+    var threshould_end = Date.parse(disappearTime);
+    var current = new Date();
+    if (threshould_start < current && threshould_end > current) {
+      // HTMLで設定した期間
+      myClass[i].classList.add("timerVisible");
+    } else {
+      // 上の期間外の場合
+      myClass[i].classList.remove("timerVisible");
+    }
+}
 </script>
 </body>
 
