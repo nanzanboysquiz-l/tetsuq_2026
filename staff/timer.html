@@ -16,12 +16,28 @@
       --digit-font: 'DSEG7Classic', system-ui, sans-serif;
     }
 
-    body { font-family: system-ui, sans-serif; background:#f7f7f7; padding:24px; }
-    .wrap { max-width: 90%; margin: 0 auto; background:#fff; border:1px solid #ddd; border-radius:10px; padding:20px; }
+    /* ▼ ページ背景を黒に */
+    body { 
+      font-family: system-ui, sans-serif; 
+      background:#000; 
+      padding:24px; 
+      color:#fff;
+    }
+
+    .wrap { 
+      max-width: 90%; 
+      margin: 0 auto; 
+      background:#111; 
+      border:1px solid #333; 
+      border-radius:10px; 
+      padding:20px; 
+      color:#fff;
+    }
+
     .row { display:flex; gap:10px; align-items:center; margin-bottom:14px; }
     button { padding:8px 12px; font-size:16px; }
 
-    /* ▼ タイマー部を黒背景＋白文字に変更 */
+    /* ▼ タイマー本体（黒背景＋白文字） */
     .time {
       font-family: var(--digit-font);
       font-variant-numeric: tabular-nums;
@@ -34,23 +50,38 @@
       background: #000;
       color: #fff;
       position: relative;
+      z-index: 2;
     }
 
-    /* ▼ 円形進捗バー（SVG） */
+    /* ▼ 円形進捗バー（タイマーを囲う外周） */
+    .progress-wrap {
+      position: relative;
+      width: 100%;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+    }
+
     .progress-circle {
       position: absolute;
+      width: 110%;   /* タイマーより少し大きく */
+      height: 110%;
       top: 50%;
       left: 50%;
-      width: 90%;
-      height: 90%;
       transform: translate(-50%, -50%);
       pointer-events: none;
     }
 
-    .status { text-align:center; color:#555; min-height:1.5em; font-size:20px; }
-    .warn { color:#b00020; }
-    .ok { color:#2e7d32; }
-    .end { color:red; font-weight:bold; font-size:32px; }
+    /* 反時計回りに減るように上方向を開始点にする */
+    .progress-circle circle {
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    .status { text-align:center; min-height:1.5em; font-size:20px; }
+    .warn { color:#ff5252; }
+    .ok { color:#00e676; }
+    .end { color:#ff1744; font-weight:bold; font-size:32px; }
   </style>
 </head>
 <body>
@@ -62,11 +93,12 @@
       <div id="currentPart" style="font-size:20px; font-weight:bold;">未設定</div>
     </div>
 
-    <!-- ▼ タイマー表示＋円形進捗バー -->
-    <div class="time" id="display">
-      00:00
+    <!-- ▼ タイマー本体＋円形進捗バー -->
+    <div class="progress-wrap">
+      <div class="time" id="display">00:00</div>
+
       <svg class="progress-circle" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="45" stroke="#444" stroke-width="8" fill="none" />
+        <circle cx="50" cy="50" r="45" stroke="#333" stroke-width="8" fill="none" />
         <circle id="progressBar" cx="50" cy="50" r="45"
                 stroke="#00e5ff" stroke-width="8" fill="none"
                 stroke-linecap="round"
