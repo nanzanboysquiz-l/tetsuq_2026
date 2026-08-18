@@ -19,8 +19,9 @@
     body { font-family: system-ui, sans-serif; background:#f7f7f7; padding:24px; }
     .wrap { max-width: 90%; margin: 0 auto; background:#fff; border:1px solid #ddd; border-radius:10px; padding:20px; }
     .row { display:flex; gap:10px; align-items:center; margin-bottom:14px; }
-    input[type="number"] { width:120px; padding:8px; font-size:16px; }
     button { padding:8px 12px; font-size:16px; }
+
+    /* ▼ タイマー部を黒背景＋白文字に変更 */
     .time {
       font-family: var(--digit-font);
       font-variant-numeric: tabular-nums;
@@ -30,7 +31,22 @@
       text-align:center; 
       margin:18px 0;
       line-height: 1;
+      background: #000;
+      color: #fff;
+      position: relative;
     }
+
+    /* ▼ 円形進捗バー（SVG） */
+    .progress-circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 90%;
+      height: 90%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
     .status { text-align:center; color:#555; min-height:1.5em; font-size:20px; }
     .warn { color:#b00020; }
     .ok { color:#2e7d32; }
@@ -46,8 +62,19 @@
       <div id="currentPart" style="font-size:20px; font-weight:bold;">未設定</div>
     </div>
 
+    <!-- ▼ タイマー表示＋円形進捗バー -->
+    <div class="time" id="display">
+      00:00
+      <svg class="progress-circle" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="45" stroke="#444" stroke-width="8" fill="none" />
+        <circle id="progressBar" cx="50" cy="50" r="45"
+                stroke="#00e5ff" stroke-width="8" fill="none"
+                stroke-linecap="round"
+                stroke-dasharray="282.743"
+                stroke-dashoffset="282.743" />
+      </svg>
+    </div>
 
-    <div class="time" id="display">00:00</div>
     <div class="row" style="justify-content:center;">
       <audio id="mpA" src="assets/audio/T_U_Koto no Asamoya.mp3"></audio>
       <audio id="mpB" src="assets/audio/Keihan_U_LtdExp.mp3"></audio>
@@ -67,20 +94,38 @@
     const display      = document.getElementById('display');
     const status       = document.getElementById('status');
     const currentPartLabel = document.getElementById('currentPart');
+    const progressBar  = document.getElementById('progressBar');
+
     const a = 15;
     const b = 20;
-    
+
     let totalSeconds = 0;
     let remaining    = 0;
     let timerId      = null;
     let running      = false;
     let currentMode = null;
 
+    const FULL_DASH = 282.743; // 円周（r=45）
+
+    function updateProgress() {
+      if (totalSeconds > 0) {
+        const ratio = remaining / totalSeconds;
+        progressBar.style.strokeDashoffset = FULL_DASH * (1 - ratio);
+      } else {
+        progressBar.style.strokeDashoffset = FULL_DASH;
+      }
+    }
+
+    function resetProgress() {
+      progressBar.style.strokeDashoffset = FULL_DASH;
+    }
+
     document.getElementById("btnA").addEventListener("click", () => {
       currentMode = "A";
       totalSeconds = a * 60;
       remaining = totalSeconds;
       updateDisplay();
+      resetProgress();
       currentPartLabel.textContent = `Part A（${a}分）`;
       setStatus(`Part A: ${a} 分で設定しました。`, 'ok');
       startBtn.disabled = false;
@@ -93,6 +138,7 @@
       totalSeconds = b * 60;
       remaining = totalSeconds;
       updateDisplay();
+      resetProgress();
       currentPartLabel.textContent = `Part B（${b}分）`;
       setStatus(`Part B: ${b} 分で設定しました。`, 'ok');
       startBtn.disabled = false;
@@ -100,18 +146,10 @@
       pauseBtn.disabled = true;
     });
 
-    function getCurrentMinutes() {
-      if (currentMode === "A") return a;
-      if (currentMode === "B") return b;
-      return null;
-    }
-    
     function format(sec) {
       const m = Math.floor(sec / 60);
       const s = sec % 60;
-      const mm = String(m).padStart(2, '0');
-      const ss = String(s).padStart(2, '0');
-      return `${mm}:${ss}`;
+      return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     }
 
     function setStatus(msg, cls='') {
@@ -120,22 +158,22 @@
     }
 
     function updateDisplay() {
-      display.textContent = format(remaining);
+      display.childNodes[0].textContent = format(remaining);
+      updateProgress();
     }
-    
+
     function tick() {
       if (remaining > 0) {
         remaining -= 1;
         updateDisplay();
+
         if (remaining === 0) {
           clearInterval(timerId);
           timerId = null;
           running = false;
-          if (currentMode === "A") {
-            document.getElementById("mpA").play();
-          } else if (currentMode === "B") {
-            document.getElementById("mpB").play();
-          }
+
+          if (currentMode === "A") document.getElementById("mpA").play();
+          if (currentMode === "B") document.getElementById("mpB").play();
 
           setStatus('Time Up!!','end');
           startBtn.disabled = false;
@@ -144,8 +182,9 @@
       }
     }
 
-   function startTimer() {
+    function startTimer() {
       if (running) return;
+
       if (remaining <= 0) {
         if (totalSeconds > 0) {
           remaining = totalSeconds;
@@ -153,7 +192,7 @@
           setStatus('まずパートを選択してください。','warn');
           return;
         }
-    }
+      }
 
       timerId = setInterval(tick, 1000);
       running = true;
@@ -180,10 +219,11 @@
       }
       remaining = totalSeconds || 0;
       updateDisplay();
+      resetProgress();
       startBtn.disabled = totalSeconds === 0;
       pauseBtn.disabled = true;
       resetBtn.disabled = totalSeconds === 0;
-      setStatus(totalSeconds ? 'リセットしました。' : 'まず n を設定してください。', totalSeconds ? 'ok' : 'warn');
+      setStatus(totalSeconds ? 'リセットしました。' : 'まずパートを設定してください。', totalSeconds ? 'ok' : 'warn');
     }
 
     startBtn.addEventListener('click', startTimer);
